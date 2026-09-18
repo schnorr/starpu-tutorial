@@ -85,27 +85,3 @@ why the mounted paths appear as =mount/...= inside the container even
 though they are =code/...= on the host), except =session3/code/demo/=,
 which additionally needs a CUDA toolkit and is meant to be built on the
 instructor's GPU machine, not by participants.
-
-* Known gaps                                                       :noexport:
-
-- *Two Session 1 figures are still labeled in Portuguese*:
-  =session1/img/starpu_modelo.png= (all labels) and
-  =session1/img/runtime.pdf= ("Recursos", "Escalonador"). Both are
-  flagged inline in =session1/slides.org= ("KNOWN GAP" comments right
-  before each =[[...]]= image link). No editable source (only rendered
-  =.png=/=.pdf=) was found for either, so redrawing them in English is
-  new work, not a quick fix — the third reused figure that had the same
-  problem (=dag.pdf=, "Aplicação"/"Tarefa A"/"Tarefa B") was already
-  replaced with a small inline TikZ diagram in English, as an example of
-  the fix these two still need. The DAG worked-example figures
-  (=exemplo_dag_1.png=, =exemplo_dag_2.pdf=) and =starvz.png= were
-  checked and are language-neutral (just "MD3"/"id:N" or English axis
-  labels) — no action needed there.
-- Not yet dry-run end-to-end inside the actual Docker/Podman image —
-  do this before the event to catch any package-name or path drift.
-- Session 3's timing (two 45-minute parts in a 90-minute session) is
-  tight; watch the clock on the day and fall back to the optional buffer
-  slot rather than rushing StarVZ.
-- Samuel Thibault's slide content was used only as inspiration for
-  Session 1, not copied — his sign-off on reusing any of his original
-  figures is still pending.
