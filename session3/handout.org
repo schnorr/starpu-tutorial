@@ -174,8 +174,15 @@ up the GPU retroactively; start a new one.
 
 The instructor now shows the CUDA counterpart of the *addition* example
 (a simpler kernel than multiplication, chosen so the demo stays short),
-provided at =code/demo/soma_matrix_cuda.c= (with a =Makefile=), inside
-this container:
+provided at =code/demo/soma_matrix_cuda.c= on the host
+(=mount/demo/soma_matrix_cuda.c= inside the container, with a
+=Makefile=):
+
+#+begin_src bash
+cd mount/demo
+make
+./soma_matrix_cuda
+#+end_src
 
 #+begin_src c
 struct starpu_codelet codelet_soma =
