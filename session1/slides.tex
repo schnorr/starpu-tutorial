@@ -1,4 +1,4 @@
-% Created 2026-09-18 Fri 13:28
+% Created 2026-09-18 Fri 16:14
 % Intended LaTeX compiler: pdflatex
 \documentclass[presentation, aspectratio=169]{beamer}
 
@@ -18,7 +18,7 @@
 \usetikzlibrary{positioning,fit,backgrounds,arrows.meta}
 \usetheme[numbering=fraction, progressbar=frametitle]{metropolis}
 \author{Lucas Mello Schnorr, Vinicius Garcia Pinto, Raymond Namyst, Samuel Thibault}
-\date{CARLA 2026 Advanced Tutorial}
+\date{CARLA 2026 Advanced Tutorial \\ {\small \url{https://github.com/schnorr/starpu-tutorial}}}
 \title{Introduction to Task-Based Parallel Programming with StarPU}
 \subtitle{Session 1 — Foundations}
 \begin{document}
@@ -26,9 +26,8 @@
 \setbeamertemplate{navigation symbols}{}
 \maketitle
 \section{Overview}
-\label{sec:org529c798}
-
-\begin{frame}[label={sec:org01010fe}]{Where we're going today}
+\label{sec:org60d640b}
+\begin{frame}[label={sec:org10381ba}]{Where we're going today}
 \begin{itemize}
 \item \alert{Session 1 (now)}: the task-based paradigm, and how StarPU implements
 it — no code yet, just the mental model.
@@ -38,10 +37,30 @@ vector scale to task-based, partitioned matrix addition.
 happened with execution traces (StarVZ).
 \end{itemize}
 \end{frame}
-\section{Why task-based programming?}
-\label{sec:org7389c94}
+\begin{frame}[label={sec:org5d446eb},fragile]{Setup — start this now, it takes a while}
+ All tutorial material (slides, handouts, exercises, solutions):
 
-\begin{frame}[label={sec:org9e8236b}]{Building a parallel application}
+\url{https://github.com/schnorr/starpu-tutorial}
+
+We will use \alert{Podman} throughout (rootless, no background daemon needed
+— Docker also works, the equivalent command is in the Session 2
+material if that is what you have installed):
+
+\begin{verbatim}
+podman pull \
+    registry.gitlab.inria.fr/starpu/starpu-docker/starpu:1.4.7
+\end{verbatim}
+
+This image is \alert{\textasciitilde{}8 GB} — start the pull \alert{now}, during this lecture, on
+whatever network you have, so it is already there when Session 2's
+hands-on begins at 11:00. The exact command to run the container (and
+what to do if it still refuses to write to your mounted folder) is in
+the Session 2 material, linked above.
+\end{frame}
+\section{Why task-based programming?}
+\label{sec:org9e5498e}
+
+\begin{frame}[label={sec:org5b185b8}]{Building a parallel application}
 Some questions you face when starting to parallelize an application:
 \begin{itemize}
 \item How do I \alert{partition} the work and the data?
@@ -51,7 +70,7 @@ Some questions you face when starting to parallelize an application:
 everything?
 \end{itemize}
 \end{frame}
-\begin{frame}[label={sec:org67305d1}]{The trouble with "classical" parallel programming}
+\begin{frame}[label={sec:orge1a2d36}]{The trouble with "classical" parallel programming}
 With MPI / OpenMP / CUDA written directly:
 \begin{itemize}
 \item \alert{You} decide, in the code, which core or device runs what, and when.
@@ -61,7 +80,7 @@ touching the core logic again.
 problem, by hand.
 \end{itemize}
 \end{frame}
-\begin{frame}[label={sec:org80cfba1}]{A different strategy: describe the work, not the schedule}
+\begin{frame}[label={sec:orgbda5c88}]{A different strategy: describe the work, not the schedule}
 Task-based programming (also called \alert{dataflow scheduling}):
 \begin{itemize}
 \item The application is split into well-defined \alert{tasks}.
@@ -71,7 +90,7 @@ Task-based programming (also called \alert{dataflow scheduling}):
 data movement, and can optimize both.
 \end{itemize}
 \end{frame}
-\begin{frame}[label={sec:org8225b74}]{Advantages and disadvantages}
+\begin{frame}[label={sec:org8845e2e}]{Advantages and disadvantages}
 \begin{block}{Advantages}
 \begin{itemize}
 \item Less parallel-programming complexity exposed to the application.
@@ -88,9 +107,9 @@ data movement, and can optimize both.
 \end{block}
 \end{frame}
 \section{The structure of a task-based application}
-\label{sec:org45f60b1}
+\label{sec:org33a5f83}
 
-\begin{frame}[label={sec:org5da7824}]{Three ingredients}
+\begin{frame}[label={sec:org9e84d6e}]{Three ingredients}
 Every task-based application, represented as a DAG, is built from:
 \begin{enumerate}
 \item \alert{Tasks}
@@ -98,7 +117,7 @@ Every task-based application, represented as a DAG, is built from:
 \item \alert{Dependencies}
 \end{enumerate}
 \end{frame}
-\begin{frame}[label={sec:org0310d82}]{Tasks}
+\begin{frame}[label={sec:org0d84228}]{Tasks}
 A \alert{unit of computation} — usually sequential code, or a kernel meant to
 run on an accelerator.
 \begin{itemize}
@@ -112,7 +131,7 @@ Examples:
 \item Applying one step/equation of a simulation model.
 \end{itemize}
 \end{frame}
-\begin{frame}[label={sec:orgb7c935f}]{Data blocks}
+\begin{frame}[label={sec:org4d7b40a}]{Data blocks}
 A \alert{subdivision of the problem's data domain}.
 \begin{itemize}
 \item Used as input and/or output of tasks.
@@ -125,7 +144,7 @@ Examples:
 \item A subset of elements being simulated.
 \end{itemize}
 \end{frame}
-\begin{frame}[label={sec:org24107bb}]{Dependencies between tasks}
+\begin{frame}[label={sec:org38d9375}]{Dependencies between tasks}
 Dependencies arise from tasks \alert{sharing the same data}.
 \begin{itemize}
 \item A task of type A produces data consumed by two tasks of type B.
@@ -147,7 +166,7 @@ Dependencies arise from tasks \alert{sharing the same data}.
 \end{tikzpicture}
 \end{center}
 \end{frame}
-\begin{frame}[label={sec:org9fba9df}]{Turning a problem into tasks — is it always easy?}
+\begin{frame}[label={sec:orgfbff9f8}]{Turning a problem into tasks — is it always easy?}
 Discretizing an algorithm/problem into tasks and data:
 \begin{itemize}
 \item Similar in spirit to the classic PCAM model (Partitioning,
@@ -157,7 +176,7 @@ efficient task-based formulation doesn't exist; it may just take
 more thought to find.
 \end{itemize}
 \end{frame}
-\begin{frame}[label={sec:orgf9a0df3}]{Worked example: finding the largest element}
+\begin{frame}[label={sec:orge9a25ee}]{Worked example: finding the largest element}
 \begin{block}{The problem}
 Given a vector of elements, find the largest one.
 \end{block}
@@ -169,7 +188,7 @@ Given a vector of elements, find the largest one.
 \end{itemize}
 \end{block}
 \end{frame}
-\begin{frame}[label={sec:orgc04bcdb},fragile]{Worked example — the task}
+\begin{frame}[label={sec:orgbe20d27},fragile]{Worked example — the task}
  \alert{Task}: find the largest value in a sub-vector.
 \begin{itemize}
 \item Takes a vector of size \(N\).
@@ -177,7 +196,7 @@ Given a vector of elements, find the largest one.
 \item Call it \texttt{MD3} ("max of 3").
 \end{itemize}
 \end{frame}
-\begin{frame}[label={sec:orgc50d1be},fragile]{Worked example — the data}
+\begin{frame}[label={sec:orgff96cfc},fragile]{Worked example — the data}
  \alert{Data}: sub-vectors of the original vector, each of size \(N\).
 \begin{itemize}
 \item For this example, we pick \(N = 3\).
@@ -185,7 +204,7 @@ Given a vector of elements, find the largest one.
 new sub-vector.
 \end{itemize}
 \end{frame}
-\begin{frame}[label={sec:orgcafa4fa},fragile]{Worked example — the dependencies}
+\begin{frame}[label={sec:org8ee1677},fragile]{Worked example — the dependencies}
  Given a vector of 27 elements, we can run \texttt{MD3} nine times.
 \begin{itemize}
 \item That produces 9 distinct results.
@@ -193,17 +212,17 @@ new sub-vector.
 \item We can apply \texttt{MD3} again on those results — and so on, recursively.
 \end{itemize}
 \end{frame}
-\begin{frame}[label={sec:orga567137}]{Worked example — the execution graph}
+\begin{frame}[label={sec:org59131f4}]{Worked example — the execution graph}
 \begin{center}
 \includegraphics[width=0.9\linewidth]{./img/exemplo_dag_1.png}
 \end{center}
 \end{frame}
-\begin{frame}[label={sec:org4bd4767}]{Worked example — the DAG}
+\begin{frame}[label={sec:orgf35751c}]{Worked example — the DAG}
 \begin{center}
 \includegraphics[width=0.9\linewidth]{./img/exemplo_dag_2.pdf}
 \end{center}
 \end{frame}
-\begin{frame}[label={sec:orge3411d8}]{Worked example — where's the parallelism?}
+\begin{frame}[label={sec:orge33a3df}]{Worked example — where's the parallelism?}
 Tasks that do \alert{not} share data, and whose dependencies are already
 satisfied, can run concurrently.
 
@@ -212,9 +231,9 @@ satisfied, can run concurrently.
 \end{center}
 \end{frame}
 \section{Runtimes}
-\label{sec:org94cb74a}
+\label{sec:orgb26447d}
 
-\begin{frame}[label={sec:orgd921a54}]{What is a runtime, here?}
+\begin{frame}[label={sec:orgcfd9e27}]{What is a runtime, here?}
 A \alert{runtime system} executes the DAG you described, instead of you
 scheduling it by hand.
 
@@ -228,7 +247,7 @@ Runtimes specifically built around task graphs:
 \item PaRSEC, OmpSs, OpenMP (tasking, >=4.0), XKaapi, \alert{StarPU}
 \end{itemize}
 \end{frame}
-\begin{frame}[label={sec:org39e7c8a}]{What do you gain, what do you lose?}
+\begin{frame}[label={sec:org696aca5}]{What do you gain, what do you lose?}
 \begin{block}{Advantages}
 \begin{itemize}
 \item Automatic scheduling decisions based on the DAG.
@@ -245,9 +264,9 @@ Runtimes specifically built around task graphs:
 \end{block}
 \end{frame}
 \section{The StarPU runtime}
-\label{sec:org2f18891}
+\label{sec:org32ecbff}
 
-\begin{frame}[label={sec:orge9d5538}]{What is StarPU?}
+\begin{frame}[label={sec:orga0237e8}]{What is StarPU?}
 A general-purpose, task-based runtime system.
 \begin{itemize}
 \item Targets parallel applications on heterogeneous, multicore machines.
@@ -255,7 +274,7 @@ A general-purpose, task-based runtime system.
 \item C/C++/Fortran interface for submitting tasks onto resources.
 \end{itemize}
 \end{frame}
-\begin{frame}[label={sec:org17a1477}]{Where StarPU sits in the software stack}
+\begin{frame}[label={sec:orgee51d05}]{Where StarPU sits in the software stack}
 \begin{center}
 \includegraphics[width=0.85\linewidth]{./img/starpu_modelo.png}
 \end{center}
@@ -264,7 +283,7 @@ A general-purpose, task-based runtime system.
 \center
 Adapted from Thibault, 2018
 \end{frame}
-\begin{frame}[label={sec:org9b0e7d7}]{The STF model}
+\begin{frame}[label={sec:orgc3b5320}]{The STF model}
 StarPU uses the \alert{Sequential Task Flow} (STF) model:
 \begin{itemize}
 \item The application submits tasks \alert{sequentially, as it runs}; the runtime
@@ -273,7 +292,7 @@ schedules them onto resources \alert{dynamically}.
 \item Tasks can be submitted gradually, as execution proceeds.
 \end{itemize}
 \end{frame}
-\begin{frame}[label={sec:org07469d4}]{Workers}
+\begin{frame}[label={sec:orgbcf83b2}]{Workers}
 A \alert{worker} is the processing entity that actually executes a task.
 \begin{itemize}
 \item Each computing resource has one or more workers.
@@ -283,7 +302,7 @@ A \alert{worker} is the processing entity that actually executes a task.
 \includegraphics[width=0.5\linewidth]{./img/runtime.pdf}
 \end{center}
 \end{frame}
-\begin{frame}[label={sec:org2462de0}]{Implementations and codelets}
+\begin{frame}[label={sec:org8c6e2e0}]{Implementations and codelets}
 Heterogeneous resources need different implementations of the same
 task.
 \begin{itemize}
@@ -295,7 +314,7 @@ execution time.
 
 (This is exactly what you will extend by hand in Session 3.)
 \end{frame}
-\begin{frame}[label={sec:org54d77b7}]{How StarPU structures a task-based program}
+\begin{frame}[label={sec:org84f3e0b}]{How StarPU structures a task-based program}
 \begin{itemize}
 \item Tasks are described as \alert{codelets}.
 \item Memory blocks are described as \alert{data handles}.
@@ -305,7 +324,7 @@ submission order — you do not write them explicitly.
 
 (This is exactly what you will build by hand in Session 2.)
 \end{frame}
-\begin{frame}[label={sec:org1d93e08},fragile]{Scheduling strategies}
+\begin{frame}[label={sec:org8028ce5},fragile]{Scheduling strategies}
  Several schedulers are available, selectable at runtime:
 \begin{itemize}
 \item \texttt{lws} — local work-stealing
@@ -317,7 +336,7 @@ submission order — you do not write them explicitly.
 Selected via the \texttt{STARPU\_SCHED} environment variable — no code change
 needed to try a different one.
 \end{frame}
-\begin{frame}[label={sec:org525b1e0}]{Analyzing performance}
+\begin{frame}[label={sec:orgdc2c1e5}]{Analyzing performance}
 StarPU applications can be analyzed using execution \alert{traces}:
 \begin{itemize}
 \item The FxT format records fine-grained runtime events.
@@ -332,9 +351,9 @@ visualization.
 This is exactly what Session 3, Part B, walks you through with StarVZ.
 \end{frame}
 \section{Wrap-up}
-\label{sec:org585713c}
+\label{sec:org38b43ca}
 
-\begin{frame}[label={sec:org042d551}]{What's next}
+\begin{frame}[label={sec:orgbd8b565}]{What's next}
 You now have the vocabulary for Session 2:
 \begin{itemize}
 \item \alert{Codelet}, \alert{data handle}, \alert{task}, implicit \alert{dependency}.

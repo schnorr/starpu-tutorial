@@ -5,7 +5,7 @@
 #+TITLE: Introduction to Task-Based Parallel Programming with StarPU
 #+SUBTITLE: Session 1 — Foundations
 #+AUTHOR: Lucas Mello Schnorr, Vinicius Garcia Pinto, Raymond Namyst, Samuel Thibault
-#+DATE: CARLA 2026 Advanced Tutorial
+#+DATE: CARLA 2026 Advanced Tutorial @@latex:\\ {\small \url{https://github.com/schnorr/starpu-tutorial}}@@
 #+OPTIONS: H:2 num:t toc:nil \n:nil @:t ::t |:t ^:t -:t f:t *:t <:t title:nil
 #+LANGUAGE: en
 #+TAGS: noexport(n) ignore(i)
@@ -44,6 +44,27 @@ if running long — it is illustrative, not load-bearing):
   vector scale to task-based, partitioned matrix addition.
 - *Session 3*: heterogeneous CPU/GPU codelets, and seeing what actually
   happened with execution traces (StarVZ).
+
+** Setup — start this now, it takes a while
+
+All tutorial material (slides, handouts, exercises, solutions):
+
+https://github.com/schnorr/starpu-tutorial
+
+We will use *Podman* throughout (rootless, no background daemon needed
+— Docker also works, the equivalent command is in the Session 2
+material if that is what you have installed):
+
+#+begin_src bash
+podman pull \
+    registry.gitlab.inria.fr/starpu/starpu-docker/starpu:1.4.7
+#+end_src
+
+This image is *~8 GB* — start the pull *now*, during this lecture, on
+whatever network you have, so it is already there when Session 2's
+hands-on begins at 11:00. The exact command to run the container (and
+what to do if it still refuses to write to your mounted folder) is in
+the Session 2 material, linked above.
 
 * Why task-based programming?
 
