@@ -1,0 +1,287 @@
+# -*- coding: utf-8 -*-
+# -*- mode: org -*-
+
+#+TITLE: Session 3 — CPU/GPU Heterogeneity and Performance Analysis with StarVZ
+#+AUTHOR: StarPU Tutorial
+#+LANGUAGE: en
+#+OPTIONS: toc:2 num:t
+
+* About this handout                                                :ignore:
+
+Student handout for Session 3 of the StarPU tutorial (14:30-16:00,
+90 min, guided hands-on). See =../roteiro-minicurso.org= (in the project
+repository this package was generated from) for how this session fits
+into the full-day schedule.
+
+Part A's exercise runs on CPU only — no GPU needed on your laptop. The
+GPU codelet in Part A is run by the instructor on the room's GPU
+machine, projected live, as a comparison point. Part B (StarVZ) analyzes
+traces from your own CPU runs plus the instructor's CPU/GPU pair.
+
+* Run the container
+
+This session mounts a *different* host directory than Session 2 (this
+package's =session3/code/=, not =session2/code/=), so start a fresh
+container from inside =session3/= — same image, same flags, see
+=../session2/handout.org= ("Run the container") for why each flag is
+needed if you haven't read it yet:
+
+#+begin_src bash
+# Podman:
+podman run -it --userns=keep-id \
+    --mount type=bind,src="$(pwd)/code",target=/home/starpu/mount \
+    registry.gitlab.inria.fr/starpu/starpu-docker/starpu:1.4.7
+# Docker (real dockerd, not Podman's compatibility shim):
+docker run -it --user "$(id -u):$(id -g)" \
+    --mount type=bind,src="$(pwd)/code",target=/home/starpu/mount \
+    registry.gitlab.inria.fr/starpu/starpu-docker/starpu:1.4.7
+#+end_src
+
+*Path note*: paths below are given as they appear on your host (e.g.
+=code/exercise/multi_matrix.c=); inside the container the same file is
+under =mount/= instead of =code/= (e.g. =mount/exercise/multi_matrix.c=).
+All =cd=/build commands below already use the =mount/...= form.
+
+* Part A — Heterogeneous codelets: CPU and GPU (~45 min)
+
+** Recap: what a codelet's "implementations" are
+
+A StarPU codelet can list more than one implementation of the same
+computation — e.g. =.cpu_funcs = { impl_a, impl_b }=, or, as you'll see
+in the instructor demo, both =.cpu_funcs= *and* =.cuda_funcs=. StarPU's
+scheduler decides, per task, which available worker (and hence which
+implementation) actually executes it. Today's exercise builds the
+*CPU-only* half of that idea: give the same codelet two CPU
+implementations, and confirm StarPU still runs it correctly.
+
+** Starting point: block matrix multiplication
+
+We reuse the block matrix multiplication example, provided at
+=code/exercise/multi_matrix.c= on the host
+(=mount/exercise/multi_matrix.c= inside the container), with a
+=Makefile=: a 1000x1000 matrix split into 200x200 blocks (5x5 grid),
+computing =C = A * B= block by block with one task per =(i, j, k)=
+combination (this is why there are more tasks than blocks in =C= — each
+output block accumulates contributions from =NUMBER_BLOCKS_WIDTH=
+tasks).
+
+Build and run it as-is first, before you touch anything:
+
+#+begin_src bash
+cd mount/exercise
+make
+./multi_matrix
+#+end_src
+
+Every printed value should be =2000.000000=: each element of =C= is the
+sum, over all =MATRIX_WIDTH= (1000) positions of the shared dimension,
+of =A[.]*B[.] = 1*2=, i.e. =1000 * 2 = 2000= — the blocking just splits
+that sum across =NUMBER_BLOCKS_WIDTH= (5) tasks per output block, each
+contributing a partial sum over its local =BLOCK_WIDTH= (200) elements.
+The point of this check is "no leftover zeros, no NaNs, all blocks
+consistent" before you start editing the codelet.
+
+** Exercise: add a second CPU implementation
+
+In =multi_matrix.c=, the codelet is:
+
+#+begin_src c
+struct starpu_codelet codelet_multi =
+{
+    .cpu_funcs = { func_cpu },
+    .cpu_funcs_name = { "func_cpu" },
+    .nbuffers = 3,
+    .modes = { STARPU_R, STARPU_R, STARPU_W },
+	.where = STARPU_CPU,
+	.name = "multiplica_bloco"
+};
+#+end_src
+
+*TODO*: write a second function, =func_cpu_ikj=, that computes the exact
+same block product as =func_cpu= but with the two innermost loops
+swapped (loop order =i, k, j= instead of =i, j, k=) — same result,
+different memory access pattern. Then register *both* implementations on
+the codelet:
+
+#+begin_src c
+struct starpu_codelet codelet_multi =
+{
+    .cpu_funcs = { func_cpu, func_cpu_ikj },
+    .cpu_funcs_name = { "func_cpu", "func_cpu_ikj" },
+    .nbuffers = 3,
+    .modes = { STARPU_R, STARPU_R, STARPU_W },
+	.where = STARPU_CPU,
+	.name = "multiplica_bloco"
+};
+#+end_src
+
+Rebuild and rerun. The result must be unchanged (StarPU always calls
+*some* valid implementation — you don't get to observe from the output
+which one ran).
+
+*Questions*:
+- The code gives you no way to tell StarPU "prefer =func_cpu_ikj=" or to
+  see, from the printed matrix, which implementation actually executed
+  each task. What tool *would* let you see that? (Keep this question in
+  mind — Part B answers it.)
+- =.where = STARPU_CPU= restricts this codelet to CPU workers. What field(s)
+  would the instructor need to add or change to also offer a CUDA
+  implementation, without removing what you just wrote?
+
+If you want to compare your answer, or you're stuck, see
+=code/solution/multi_matrix_two_impl.c= on the host
+(=mount/solution/multi_matrix_two_impl.c= inside the container) — same
+exercise, already complete, with its own =Makefile=.
+
+** Instructor demo: adding the GPU implementation
+
+The instructor now shows the CUDA counterpart of the *addition* example
+(a simpler kernel than multiplication, chosen so the demo stays short),
+provided at =code/demo/soma_matrix_cuda.c= (with a =Makefile= — CUDA
+toolkit required, instructor's machine only), on the room's GPU machine:
+
+#+begin_src c
+struct starpu_codelet codelet_soma =
+{
+    .cpu_funcs = { func_cpu },
+    .cuda_funcs = { func_gpu },
+    .nbuffers = 3,
+    .modes = { STARPU_R, STARPU_R, STARPU_W },
+    .name = "soma_bloco",
+    .where = STARPU_CUDA
+};
+#+end_src
+
+Watch for:
+- =func_gpu= is the same "C = A + B" computation as =func_cpu=, but
+  written against cuBLAS (=cublasSgeam=) and running on the StarPU CUDA
+  stream (=starpu_cuda_get_local_stream()=).
+- =.where = STARPU_CUDA= here means *only* the GPU implementation is
+  eligible in this exact struct — contrast with your exercise, where
+  =.where = STARPU_CPU= restricted to CPU. The instructor will also show
+  the version with =.where= left out (both =.cpu_funcs= and
+  =.cuda_funcs= set, no =.where=), where StarPU is free to choose either
+  a CPU or a GPU worker per task.
+- The instructor times the same program run three ways (CPU-only build,
+  GPU-only build, and letting StarPU choose) and compares wall-clock
+  time. You are not expected to reproduce this — no GPU is assumed on
+  your machine — just observe and ask questions.
+
+*Note on the official, production-grade version*: what you just saw is
+the simplest possible CPU-vs-GPU codelet, chosen so the concept stays
+visible. StarPU's own tutorial ships a realistic equivalent that calls
+into real BLAS/cuBLAS/hipBLAS libraries for actual GEMM (matrix-matrix
+product), in the full project repository at
+=starpu-docker/tutorial/C/gemm/= (=dgemm.c=, =sgemm.c=, =xgemm.c= +
+=common/blas.c=, =common/blas_model.c=; not included in this package).
+It is not live-coded in this tutorial — the Makefile/BLAS-backend
+plumbing would eat the time budget — but it's worth opening after the
+tutorial to see "what this looks like for a real numerical kernel".
+
+* Part B — Execution traces and StarVZ visualization (~45 min)
+
+Goal: stop guessing which worker ran which task, and *see* it — using
+the same programs you already ran in Part A (and Session 2) as trace
+sources.
+
+** Recording a trace
+
+StarPU must be built with FxT tracing support (already the case in the
+tutorial Docker image). Enable it with two environment variables, then
+rerun any program you already built:
+
+#+begin_src bash
+STARPU_FXT_PREFIX=$PWD/ STARPU_GENERATE_TRACE=1 ./multi_matrix
+#+end_src
+
+This produces one or more =prof_*= files (raw FxT trace) in the current
+directory — one per StarPU worker thread.
+
+** Installing StarVZ (skip if already provided in the image)
+
+#+begin_src bash
+git clone https://github.com/schnorr/starvz.git
+apt install -y r-base libxml2-dev libssl-dev \
+    libcurl4-openssl-dev libgit2-dev libboost-dev
+./starvz/R/install.R
+
+# pajeng (FxT -> Paje trace converter used by StarVZ's phase 1)
+apt install -y git cmake build-essential \
+    libboost-dev asciidoc flex bison
+git clone git://github.com/schnorr/pajeng.git
+mkdir -p pajeng/b && cd pajeng/b
+cmake ..
+make
+#+end_src
+
+** Phase 1 — convert the raw trace
+
+#+begin_src bash
+export PATH=starvz/:$PATH
+export PATH=pajeng/b:$PATH
+export PATH=$STARPU_HOME/bin:$PATH
+./starvz/src/phase1-workflow.sh ./ ""
+#+end_src
+
+This turns the =prof_*= FxT files into =.feather= files (columnar data,
+readable from R) in the same directory.
+
+** Phase 2 — load, configure, and plot (in R)
+
+#+begin_src R
+library(starvz)
+dtrace <- the_fast_reader_function("./")
+pajer <- config::get(file = "starvz/full_config.yaml")
+#+end_src
+
+Turn on the panels that matter most for a first look — submitted vs.
+ready task curves (this is what answers "was there ever an idle
+worker with tasks piling up ready to run?"):
+
+#+begin_src R
+pajer$starpu$active = FALSE
+pajer$submitted$active = TRUE
+pajer$submitted$height  = 1
+pajer$ready$active = TRUE
+pajer$ready$height  = 1
+pajer$st$labels = "ALL"
+#+end_src
+
+Then render it:
+
+#+begin_src R
+starvz_plot(dtrace)
+#+end_src
+
+You should get a space-time diagram similar to
+=../session1/img/starvz.png= — one row per worker, colored rectangles
+for each task execution, plus the submitted/ready curves above.
+
+** Exercise: compare two traces
+
+Repeat trace acquisition + Phase 1 + Phase 2 for:
+1. Your own =multi_matrix= run from Part A (CPU only, two
+   implementations available).
+2. The instructor's CPU-only vs. GPU (or mixed) run from the demo (the
+   instructor shares the resulting trace files if you don't have a
+   GPU to generate your own).
+
+*Discussion questions*:
+- In your own CPU-only trace, can you tell from the plot alone whether
+  =func_cpu= or =func_cpu_ikj= executed a given task? Why or why not?
+  (Connects back to the question you were asked to hold onto in Part
+  A.)
+- In the instructor's GPU trace, what visibly changes in the worker rows
+  compared to the CPU-only trace? Is there a point where GPU workers sit
+  idle while CPU workers are busy, or vice versa — and if so, what would
+  that suggest about how tasks were distributed?
+- Look at the submitted/ready curves: is there ever a long gap between
+  "task submitted" and "task ready"? What would cause that gap, in terms
+  of the dependencies discussed in Session 1?
+
+** Reference material
+
+- In the full project repository: =slide/2020_ERAD_STARPU.org= lines
+  1231-1355 and =capitulo/erad_2020_minicurso_starpu.org= lines
+  954-1097 (original Portuguese walkthrough this handout is based on).
+- StarVZ repository: https://github.com/schnorr/starvz

@@ -1,0 +1,378 @@
+# -*- coding: utf-8 -*-
+# -*- mode: org -*-
+
+#+TITLE: Session 2 — Environment, First Program, and Data Partitioning
+#+AUTHOR: StarPU Tutorial
+#+LANGUAGE: en
+#+OPTIONS: toc:2 num:t
+
+* About this handout                                                :ignore:
+
+Student handout for Session 2 of the StarPU tutorial (11:00-13:00,
+120 min, guided hands-on). See =../roteiro-minicurso.org= (in the
+project repository this package was generated from) for how this
+session fits into the full-day schedule. Everything here runs on CPU
+only, inside the official StarPU Docker/Podman image — no GPU is needed
+for this session.
+
+Every exercise's skeleton and reference solution is included in this
+package under =code/= (see each section below) — try to write the code
+yourself first, and only look at the reference solution if you get
+stuck or want to double-check your answer.
+
+* Local Image Instructions                                                :noexport:
+Pull image
+#+begin_src sh :results output :exports both :eval no-export
+podman pull registry.gitlab.inria.fr/starpu/starpu-docker/starpu:1.4.7
+#+end_src
+
+Save it to tar and/or zst, in two steps
+#+begin_src sh :results output :exports both :eval no-export
+podman save -o starpu-image.tar registry.gitlab.inria.fr/starpu/starpu-docker/starpu:1.4.7
+cat starpu-image.tar | zstd -T0 -19 -o starpu-image.tar.zst
+#+end_src
+
+Or in a single step:
+#+begin_src sh :results output :exports both :eval no-export
+podman save registry.gitlab.inria.fr/starpu/starpu-docker/starpu:1.4.7 | zstd -T0 -19 -o starpu-image.tar.zst
+#+end_src
+
+Zst version is much smaller but not sure all students have Zstd
+installed, so the tar one is a fallback.
+#+begin_src shell :results output :exports both :eval no-export
+ls -lth starpu-image.*
+#+end_src
+
+#+RESULTS:
+: -rw-rw-r-- 1 vgpinto vgpinto 7.7G Sep 18 09:36 starpu-image.tar
+: -rw-rw-r-- 1 vgpinto vgpinto 1.8G Sep 18 09:36 starpu-image.tar.zst
+
+* Before the session (pre-requisite, not part of the 120 min)
+
+Pull the StarPU image *before* Session 2 starts, so no session time is
+lost to downloads:
+
+** From registry.gitlab.inria.fr
+
+#+begin_src bash
+docker pull registry.gitlab.inria.fr/starpu/starpu-docker/starpu:1.4.7
+# or, with Podman:
+podman pull registry.gitlab.inria.fr/starpu/starpu-docker/starpu:1.4.7
+#+end_src
+
+** From the starpu-image.tar.zst or starpu-image.tar
+
+Loading image at podman/docker
+#+begin_src shell :results output :exports both :eval no-export
+zstd -dc starpu-image.tar.zst | podman load
+# or
+podman load -i starpu-image.tar
+#+end_src
+
+Checking with =image ls=
+#+begin_src shell :results output :exports both :eval no-export
+docker image ls | grep starpu
+#+end_src
+
+#+RESULTS:
+: registry.gitlab.inria.fr/starpu/starpu-docker/starpu:1.4.7   d135e60a8655       16.5GB         8.18GB   U    
+
+** Run the container
+
+Start a container with your own working directory mounted inside it, so
+files you create/edit under =/home/starpu/mount= are the same files as
+=session2/code/= on your host, in both directions.
+
+*Podman* (rootless Podman remaps container UIDs into a subordinate
+range by default — e.g. UID 1000 inside the container lands as some
+UID 100000+ on the host — which is why the container's =starpu= user
+otherwise gets "Permission denied" writing into a plain bind mount of
+your own directory; =--userns=keep-id= makes the container see your own
+UID/GID instead of the remapped one):
+
+#+begin_src bash
+podman run -it --userns=keep-id \
+    --mount type=bind,src="$(pwd)/code",target=/home/starpu/mount \
+    registry.gitlab.inria.fr/starpu/starpu-docker/starpu:1.4.7
+#+end_src
+
+*Docker* (real =dockerd=, not Podman's =docker= compatibility shim — check
+with =docker --version=; if it prints "podman version ...", you are
+actually using Podman and want the command above instead). Plain Docker
+does not remap UIDs by default, so this only bites if your host user's
+UID/GID differ from the image's =starpu= user (=1000:1000=); passing
+=--user= explicitly makes it work either way:
+
+#+begin_src bash
+docker run -it --user "$(id -u):$(id -g)" \
+    --mount type=bind,src="$(pwd)/code",target=/home/starpu/mount \
+    registry.gitlab.inria.fr/starpu/starpu-docker/starpu:1.4.7
+#+end_src
+
+(Passing =--userns=keep-id= to real Docker, or =--user= alone to
+rootless Podman without =--userns=keep-id=, does *not* fix this — the
+flag has to match the tool, as shown above.)
+
+Once inside the container, check that StarPU sees your CPU workers:
+
+#+begin_src bash
+starpu_machine_display -notopology
+#+end_src
+
+You should see a number of "CPU workers" matching your machine's core
+count. If you don't, ask the instructor before continuing.
+
+*Path note*: every file path below is given as it appears in this
+package *on your host* (e.g. =code/part_a/vector_scal0.c=). Once you are
+inside the container, that same file is under =mount/= instead of
+=code/= — e.g. =mount/part_a/vector_scal0.c= — because the run commands
+above mount this package's =code/= directory (on the host) as
+=/home/starpu/mount= (inside the container). All =cd=/=cat=/build
+commands below are meant to run *inside* the container, so they already
+use the =mount/...= form.
+
+* Part A — First StarPU program (~50 min)
+
+Goal: go from a plain sequential program to a StarPU program made of
+*tasks* that operate on *registered data*, in three small steps. All
+three programs are already provided, fully working, both baked into the
+Docker image under =/home/starpu/tutorial/C/= and copied into this
+package under =code/part_a/= (same files, plus a trimmed =Makefile= that
+only builds the three programs used here).
+
+** Step 1 — the sequential baseline: =vector_scal0.c=
+
+Read the file first:
+
+#+begin_src bash
+cat mount/part_a/vector_scal0.c
+#+end_src
+
+It scales a vector of 2048 floats by a constant factor, in plain C, no
+StarPU involved. Build and run it:
+
+#+begin_src bash
+cd mount/part_a
+make vector_scal0
+./vector_scal0
+#+end_src
+
+*Question*: what do you expect the "BEFORE"/"AFTER" printed values to
+be? Confirm it matches.
+
+** Step 2 — the same computation as a StarPU task: =vector_scal_task_insert.c=
+
+Read the file. Identify the three ingredients that turn this into a
+StarPU program:
+1. A *codelet* (=struct starpu_codelet cl=) that wraps the CPU function
+   =vector_scal_cpu= (defined in =vector_scal_cpu.c=, the same kernel as
+   Step 1, just with a StarPU-compatible signature).
+2. A *data handle* (=starpu_data_handle_t vector_handle=), created with
+   =starpu_vector_data_register=, so StarPU (not your code directly)
+   controls access to the vector.
+3. A *task*, submitted with =starpu_task_insert=, that names the codelet
+   and passes the handle with an access mode (=STARPU_RW= here, since the
+   kernel both reads and overwrites the vector in place).
+
+Build and run it:
+
+#+begin_src bash
+make vector_scal_task_insert
+./vector_scal_task_insert
+#+end_src
+
+*Questions*:
+- Why does =starpu_task_wait_for_all()= need to be called before reading
+  =vector[0]= again in the "AFTER" line?
+- What would happen if you removed =starpu_data_unregister= before
+  =starpu_shutdown()=? (You don't have to run it broken — just reason
+  about it, then check the manual/ask the instructor.)
+
+** Step 3 — partitioning the data: =vector_scal_task_insert_filter.c=
+
+Same computation, but now the vector is split into =N=10= equal pieces
+with =starpu_data_partition= and a =starpu_vector_filter_block= filter,
+and *one task per piece* is submitted in a loop, each one working on
+=starpu_data_get_sub_data(vector_handle, 1, i)=.
+
+Build and run it:
+
+#+begin_src bash
+make vector_scal_task_insert_filter
+./vector_scal_task_insert_filter
+#+end_src
+
+*Questions* (this is the bridge into Part B):
+- How many tasks does this program submit in total?
+- Nothing in the code says "run these 10 tasks in parallel" — so why
+  can StarPU do it anyway? (Hint: think about what each task's
+  =STARPU_RW= access mode is declared on.)
+- What call "collects" the partitioned pieces back into a single
+  vector at the end?
+
+* Part B — Block matrix addition with data partitioning (~70 min)
+
+Goal: apply the same idea (partition → per-block tasks → StarPU infers
+what can run in parallel) to a 2D problem: adding two matrices,
+block by block.
+
+** The problem
+
+Two 10x10 matrices (=MATRIX_WIDTH=), split into 2x2 blocks
+(=BLOCK_WIDTH=), giving a 5x5 grid of 25 blocks (=NUMBER_BLOCKS=).
+Matrix =A= is filled with 1s, matrix =B= with 2s; you must compute
+=C = A + B= (so every element of =C= should end up as =3.0=), one StarPU
+task per block.
+
+** Skeleton (fill in the =/* TODO */= parts)
+
+Already provided at =code/part_b/skeleton/matrix_add.c= on the host
+(=mount/part_b/skeleton/matrix_add.c= inside the container), with a
+=Makefile=; reproduced here for reference:
+
+#+begin_src c
+#include <stdlib.h>
+#include <limits.h>
+#include <starpu.h>
+
+#define MATRIX_WIDTH 10
+#define BLOCK_WIDTH 2
+#define BLOCK_TOTAL_SIZE (BLOCK_WIDTH*BLOCK_WIDTH)
+#define NUMBER_BLOCKS_WIDTH (MATRIX_WIDTH/BLOCK_WIDTH)
+#define NUMBER_BLOCKS (NUMBER_BLOCKS_WIDTH*NUMBER_BLOCKS_WIDTH)
+
+void func_cpu(void *buffers[], void *args)
+{
+    float *A = (float *)STARPU_VECTOR_GET_PTR(buffers[0]);
+    float *B = (float *)STARPU_VECTOR_GET_PTR(buffers[1]);
+    float *C = (float *)STARPU_VECTOR_GET_PTR(buffers[2]);
+
+    /* TODO 1: compute C[i] = A[i] + B[i] for every element of this block
+     * (BLOCK_TOTAL_SIZE elements). */
+}
+
+struct starpu_codelet codelet_add =
+{
+    .cpu_funcs = { func_cpu },
+    /* TODO 2: how many buffers does this codelet take, and with which
+     * access modes (STARPU_R / STARPU_W / STARPU_RW)? Fill in .nbuffers
+     * and .modes accordingly. */
+    .name = "block_add",
+};
+
+int main(){
+
+    starpu_init(NULL);
+    starpu_topology_print(stdout);
+
+    float* matrix_a[NUMBER_BLOCKS];
+    float* matrix_b[NUMBER_BLOCKS];
+    float* matrix_c[NUMBER_BLOCKS];
+
+    starpu_data_handle_t matrix_a_handle[NUMBER_BLOCKS];
+    starpu_data_handle_t matrix_b_handle[NUMBER_BLOCKS];
+    starpu_data_handle_t matrix_c_handle[NUMBER_BLOCKS];
+
+    for(int i=0; i<NUMBER_BLOCKS; i++){
+        matrix_a[i] = (float*)malloc(BLOCK_WIDTH * BLOCK_WIDTH * sizeof(float));
+        matrix_b[i] = (float*)malloc(BLOCK_WIDTH * BLOCK_WIDTH * sizeof(float));
+        matrix_c[i] = (float*)malloc(BLOCK_WIDTH * BLOCK_WIDTH * sizeof(float));
+    }
+
+    /* Fill A with 1s and B with 2s, block by block, at the right global
+     * (i, y) position. Already done for you. */
+    for(int i=0; i<MATRIX_WIDTH; i++){
+        for(int y=0; y<MATRIX_WIDTH; y++){
+            int bi = i/BLOCK_WIDTH, by = y/BLOCK_WIDTH;
+            int ci = i%BLOCK_WIDTH, cy = y%BLOCK_WIDTH;
+            matrix_a[by * NUMBER_BLOCKS_WIDTH + bi][cy * BLOCK_WIDTH + ci] = 1;
+            matrix_b[by * NUMBER_BLOCKS_WIDTH + bi][cy * BLOCK_WIDTH + ci] = 2;
+        }
+    }
+
+    for(int i=0; i<NUMBER_BLOCKS; i++){
+        /* TODO 3: register matrix_a[i], matrix_b[i] and matrix_c[i] with
+         * StarPU using starpu_matrix_data_register(), producing
+         * matrix_a_handle[i]/matrix_b_handle[i]/matrix_c_handle[i].
+         * Signature: starpu_matrix_data_register(&handle, STARPU_MAIN_RAM,
+         *   (uintptr_t)pointer, ld, nx, ny, elemsize)
+         * Here ld == nx == ny == BLOCK_WIDTH (blocks are stored
+         * contiguously with no extra padding). */
+    }
+
+    for(int i=0; i<NUMBER_BLOCKS; i++){
+        /* TODO 4: submit one task per block with starpu_task_insert(),
+         * passing &codelet_add and the three handles for block i with
+         * the correct access mode for each (matching TODO 2). Don't
+         * forget the trailing 0. */
+    }
+
+    starpu_task_wait_for_all();
+
+    for(int i=0; i<NUMBER_BLOCKS; i++){
+        starpu_data_unregister(matrix_a_handle[i]);
+        starpu_data_unregister(matrix_b_handle[i]);
+        starpu_data_unregister(matrix_c_handle[i]);
+    }
+
+    starpu_shutdown();
+
+    /* Print the result: every value should be 3.0 */
+    for(int i=0; i<MATRIX_WIDTH; i++){
+        for(int y=0; y<MATRIX_WIDTH; y++){
+            int bi = i/BLOCK_WIDTH, by = y/BLOCK_WIDTH;
+            int ci = i%BLOCK_WIDTH, cy = y%BLOCK_WIDTH;
+            printf("%f ", matrix_c[by * NUMBER_BLOCKS_WIDTH + bi][cy * BLOCK_WIDTH + ci]);
+        }
+        printf("\n");
+    }
+}
+#+end_src
+
+** Build and check
+
+#+begin_src bash
+cd mount/part_b/skeleton
+make
+./matrix_add
+#+end_src
+
+The unedited skeleton *compiles* (with warnings pointing at exactly what
+you still need to fill in: unused =A=/=B=/=C= in TODO 1, uninitialized
+handles in TODOs 3-4) but *segfaults* when run, since the handles are
+never registered — that is expected, not a StarPU bug. Once TODOs 1-4
+are done, every printed value must be =3.000000=. If you see =0.000000=
+somewhere instead of a crash, the most likely cause is a wrong access
+mode or a wrong handle passed to =starpu_task_insert= in TODO 4 — the
+task ran, but on the wrong data.
+
+** Discussion questions
+
+- You submitted =NUMBER_BLOCKS= (25) independent tasks with no explicit
+  ordering between them. What, in the code, tells StarPU that all 25
+  can safely run concurrently? What would change if all 25 tasks wrote
+  into the *same* =matrix_c_handle= instead of one each?
+- This program never calls =starpu_data_partition=, unlike Step 3 of
+  Part A — instead, each block is registered as an *independent* handle
+  from the start. Both are valid ways to get "one handle per block";
+  what's the difference in what the two approaches let you do in
+  DAG/dependencies terms (Session 1)? (Hint: what if you wanted a task
+  that operated on the *whole* matrix afterward?)
+
+** Reference solution
+
+If you want to compare your answer, or you're stuck, see
+=code/part_b/solution/matrix_add.c= on the host
+(=mount/part_b/solution/matrix_add.c= inside the container) — same
+exercise, already complete, also with its own =Makefile=.
+
+** Optional: the official tutorial's version
+
+The full project repository this package was generated from also has
+=starpu-docker/tutorial/C/partition/mult.c=, =mult_task.c= and
+=mult_args.c=, which solve a related (matrix multiplication, not
+addition) partitioning problem using =starpu_data_partition= directly on
+a full matrix instead of pre-splitting it into independent blocks — not
+included in this package, but worth a look after the tutorial as a
+second style of doing the same thing, and as a preview of the
+multiplication example used in Session 3.

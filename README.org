@@ -1,0 +1,101 @@
+# -*- coding: utf-8 -*-
+# -*- mode: org -*-
+
+#+TITLE: StarPU Tutorial — Material Package
+#+LANGUAGE: en
+#+OPTIONS: toc:2 num:t
+
+* What this is                                                      :ignore:
+
+Self-contained delivery package for the StarPU tutorial: Session 1
+lecture slides, and Sessions 2-3 student handouts with their exercise
+skeletons and reference solutions. Generated from the working
+repository this directory lives in — see =../roteiro-minicurso.org= for
+the full-day schedule, logistics decisions, and the rationale behind
+every choice made here (why Docker/Podman and not Spack, why CPU-only
+exercises plus an instructor GPU demo, why the simple example was
+chosen over the official GEMM for the heterogeneity demo, etc.).
+
+This package intentionally does *not* copy the entire working
+repository — only what a participant or instructor needs on the day.
+A few handout notes point back at the full repository (e.g. the
+official =starpu-docker/tutorial/C/gemm/= example) for optional,
+after-the-tutorial reading.
+
+* Contents
+
+| Path                             | What it is                                                        |
+|-----------------------------------+--------------------------------------------------------------------|
+| =session1/slides.org=             | Session 1 lecture slides (Beamer/org, English, ~90 min of content, 28 frames) |
+| =session1/slides.tex=/=.pdf=      | Already-compiled output (see "Building the slides" below to regenerate) |
+| =session1/img/=                   | Figures used by the slides                                        |
+| =session2/handout.org=            | Session 2 student handout (environment, first program, partitioning) |
+| =session2/code/part_a/=           | The 3 progressive =vector_scal*= programs + trimmed =Makefile=    |
+| =session2/code/part_b/skeleton/=  | Block-matrix-addition exercise skeleton (with =/* TODO */=) + =Makefile= |
+| =session2/code/part_b/solution/=  | Reference solution for the same exercise + =Makefile=             |
+| =session3/handout.org=            | Session 3 student handout (heterogeneity, StarVZ)                 |
+| =session3/code/exercise/=         | Block matrix multiplication starting point (=multi_matrix.c=) + =Makefile= |
+| =session3/code/solution/=         | Same, with a second CPU implementation added + =Makefile=          |
+| =session3/code/demo/=             | Instructor-only CPU/GPU codelet demo (=soma_matrix_cuda.c=) + =Makefile= (needs CUDA toolkit) |
+
+* Building the slides
+
+Session 1's =slides.org= is a Beamer deck, not a plain article like the
+rest of the project — it must be exported with
+=org-beamer-export-to-latex= (not the plain =org-latex-export-to-latex=
+used by =capitulo/Makefile=; the latter silently degrades a beamer
+class file to =\section=/=\subsection= instead of =\begin{frame}=, with
+no error, so double-check frame count if you re-export). Requires
+=(require 'ox-beamer)= to be loaded first if it isn't already part of
+your Emacs config:
+
+#+begin_src bash
+emacs -batch -l ~/.emacs.d/init.el \
+  --eval "(require 'ox-beamer)" \
+  --eval "(setq enable-local-eval t)" \
+  --eval "(setq enable-local-variables t)" \
+  slides.org --funcall org-beamer-export-to-latex
+pdflatex -interaction=nonstopmode slides.tex
+pdflatex -interaction=nonstopmode slides.tex   # second pass for cross-references
+#+end_src
+
+Needs the =metropolis= Beamer theme (already on this machine's TeX Live)
+and produces some harmless warnings (older-format included PDFs
+reporting a missing "ProcSets" resource; one overfull vbox) — no code
+listings are used in this deck, so =listing_options.tex= is not needed
+here.
+
+* Building the code
+
+Every code subdirectory under =session2/code/= and =session3/code/= has
+its own =Makefile=; =cd= into it and run =make=. All of them assume
+=pkg-config= can find =starpu-1.4= (true inside the tutorial Docker/
+Podman image — see =session2/handout.org= for how to start it *and* for
+why the mounted paths appear as =mount/...= inside the container even
+though they are =code/...= on the host), except =session3/code/demo/=,
+which additionally needs a CUDA toolkit and is meant to be built on the
+instructor's GPU machine, not by participants.
+
+* Known gaps (see also the "Open items" list in =../roteiro-minicurso.org=)
+
+- *Two Session 1 figures are still labeled in Portuguese*:
+  =session1/img/starpu_modelo.png= (all labels) and
+  =session1/img/runtime.pdf= ("Recursos", "Escalonador"). Both are
+  flagged inline in =session1/slides.org= ("KNOWN GAP" comments right
+  before each =[[...]]= image link). No editable source (only rendered
+  =.png=/=.pdf=) was found for either, so redrawing them in English is
+  new work, not a quick fix — the third reused figure that had the same
+  problem (=dag.pdf=, "Aplicação"/"Tarefa A"/"Tarefa B") was already
+  replaced with a small inline TikZ diagram in English, as an example of
+  the fix these two still need. The DAG worked-example figures
+  (=exemplo_dag_1.png=, =exemplo_dag_2.pdf=) and =starvz.png= were
+  checked and are language-neutral (just "MD3"/"id:N" or English axis
+  labels) — no action needed there.
+- Not yet dry-run end-to-end inside the actual Docker/Podman image —
+  do this before the event to catch any package-name or path drift.
+- Session 3's timing (two 45-minute parts in a 90-minute session) is
+  still flagged as tight in the roadmap; watch the clock on the day and
+  fall back to the optional buffer session rather than rushing StarVZ.
+- Samuel Thibault's slide content was used only as inspiration, not
+  copied — his sign-off on reusing any of his original figures is still
+  pending (see the roadmap's "Authorship note").
