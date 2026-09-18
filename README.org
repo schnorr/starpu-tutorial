@@ -7,20 +7,31 @@
 
 * What this is                                                      :ignore:
 
-Self-contained delivery package for the StarPU tutorial: Session 1
-lecture slides, and Sessions 2-3 student handouts with their exercise
-skeletons and reference solutions. Generated from the working
-repository this directory lives in — see =../roteiro-minicurso.org= for
-the full-day schedule, logistics decisions, and the rationale behind
-every choice made here (why Docker/Podman and not Spack, why CPU-only
-exercises plus an instructor GPU demo, why the simple example was
-chosen over the official GEMM for the heterogeneity demo, etc.).
+Self-contained package for the StarPU tutorial: a one-day, three-session
+introduction to the task-based parallel programming paradigm using the
+StarPU runtime. Session 1 is a lecture on the concepts and the StarPU
+model; Sessions 2 and 3 are guided hands-on labs, each with a student
+handout, exercise skeletons, and reference solutions. Everything a
+participant or instructor needs for the day is under this directory.
 
-This package intentionally does *not* copy the entire working
-repository — only what a participant or instructor needs on the day.
-A few handout notes point back at the full repository (e.g. the
-official =starpu-docker/tutorial/C/gemm/= example) for optional,
-after-the-tutorial reading.
+* Sessions overview
+
+The tutorial runs as three sessions in a single day, with a coffee
+break between Sessions 1 and 2 and a lunch break between Sessions 2 and
+3. An optional buffer slot follows Session 3 for unfinished exercises or
+Q&A, used only if needed.
+
+| Session                        | Time        | Duration | Format          | Summary                                                                 |
+|---------------------------------+-------------+----------+-----------------+--------------------------------------------------------------------------|
+| [[file:session1/slides.org][Session 1 — Foundations]]        | 09:00–10:30 | 90 min   | Lecture         | The task-based paradigm, DAGs of tasks/data/dependencies, and the StarPU runtime model: the STF execution model, workers, codelets, data handles, and a scheduling overview. |
+| [[file:session2/handout.org][Session 2 — First programs]]     | 11:00–13:00 | 120 min  | Guided hands-on | Environment setup (Docker/Podman); three progressively richer StarPU programs (sequential → task-based → data-partitioned); a block-matrix-addition exercise with data partitioning. |
+| [[file:session3/handout.org][Session 3 — Heterogeneity]]      | 14:30–16:00 | 90 min   | Guided hands-on | CPU/GPU heterogeneity via multi-implementation codelets, with an instructor-led CPU-vs-GPU demo; recording and visualizing execution traces with StarVZ. |
+
+By the end of the day, participants will have written and run their own
+StarPU programs on CPU, understood how StarPU infers task dependencies
+and parallelism from data accesses, seen how the same codelet structure
+extends to GPU execution, and used execution traces to see what the
+runtime actually did rather than just measuring wall-clock time.
 
 * Contents
 
@@ -40,14 +51,13 @@ after-the-tutorial reading.
 
 * Building the slides
 
-Session 1's =slides.org= is a Beamer deck, not a plain article like the
-rest of the project — it must be exported with
-=org-beamer-export-to-latex= (not the plain =org-latex-export-to-latex=
-used by =capitulo/Makefile=; the latter silently degrades a beamer
-class file to =\section=/=\subsection= instead of =\begin{frame}=, with
-no error, so double-check frame count if you re-export). Requires
-=(require 'ox-beamer)= to be loaded first if it isn't already part of
-your Emacs config:
+Session 1's =slides.org= is a Beamer deck, so it must be exported with
+=org-beamer-export-to-latex=, not the plain =org-latex-export-to-latex=
+— the latter silently degrades a beamer class file to
+=\section=/=\subsection= instead of =\begin{frame}=, with no error, so
+double-check frame count if you re-export. Requires =(require
+'ox-beamer)= to be loaded first if it isn't already part of your Emacs
+config:
 
 #+begin_src bash
 emacs -batch -l ~/.emacs.d/init.el \
@@ -59,8 +69,8 @@ pdflatex -interaction=nonstopmode slides.tex
 pdflatex -interaction=nonstopmode slides.tex   # second pass for cross-references
 #+end_src
 
-Needs the =metropolis= Beamer theme (already on this machine's TeX Live)
-and produces some harmless warnings (older-format included PDFs
+Needs the =metropolis= Beamer theme (part of most complete TeX Live
+installs) and produces some harmless warnings (older-format included PDFs
 reporting a missing "ProcSets" resource; one overfull vbox) — no code
 listings are used in this deck, so =listing_options.tex= is not needed
 here.
@@ -76,7 +86,7 @@ though they are =code/...= on the host), except =session3/code/demo/=,
 which additionally needs a CUDA toolkit and is meant to be built on the
 instructor's GPU machine, not by participants.
 
-* Known gaps (see also the "Open items" list in =../roteiro-minicurso.org=)
+* Known gaps
 
 - *Two Session 1 figures are still labeled in Portuguese*:
   =session1/img/starpu_modelo.png= (all labels) and
@@ -94,8 +104,8 @@ instructor's GPU machine, not by participants.
 - Not yet dry-run end-to-end inside the actual Docker/Podman image —
   do this before the event to catch any package-name or path drift.
 - Session 3's timing (two 45-minute parts in a 90-minute session) is
-  still flagged as tight in the roadmap; watch the clock on the day and
-  fall back to the optional buffer session rather than rushing StarVZ.
-- Samuel Thibault's slide content was used only as inspiration, not
-  copied — his sign-off on reusing any of his original figures is still
-  pending (see the roadmap's "Authorship note").
+  tight; watch the clock on the day and fall back to the optional buffer
+  slot rather than rushing StarVZ.
+- Samuel Thibault's slide content was used only as inspiration for
+  Session 1, not copied — his sign-off on reusing any of his original
+  figures is still pending.
