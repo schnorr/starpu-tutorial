@@ -134,10 +134,48 @@ exercise, already complete, with its own =Makefile=.
 
 ** Instructor demo: adding the GPU implementation
 
+*** Running the container with GPU access (instructor only)
+
+One-time setup on the GPU machine (only needed once, not per session):
+generate the NVIDIA CDI spec so Podman/Docker can see the GPU at all —
+without this, =--device=/=--gpus= silently finds nothing:
+
+#+begin_src bash
+sudo nvidia-ctk cdi generate --output=/etc/cdi/nvidia.yaml
+sudo chmod a+r /etc/cdi/nvidia.yaml
+#+end_src
+
+Then start the container the same way as the student flow above, just
+adding =--device nvidia.com/gpu=all=:
+
+#+begin_src bash
+podman run -it --userns=keep-id --device nvidia.com/gpu=all \
+    --mount type=bind,src="$(pwd)/code",target=/home/starpu/mount \
+    registry.gitlab.inria.fr/starpu/starpu-docker/starpu:1.4.7
+#+end_src
+
+Confirm StarPU actually sees the GPU before going further:
+
+#+begin_src bash
+starpu_machine_display -notopology
+#+end_src
+
+Look for a line like "1 CUDA worker: CUDA 0.0 (<your GPU name>)". If it
+says "No CUDA worker" instead: check =nvidia-smi -L= on the *host*
+first — if that doesn't list the GPU either, the container flags won't
+help, the problem is outside the container. If =nvidia-smi -L= *does*
+work on the host, re-check the CDI step above (=nvidia-ctk cdi list=
+should print =nvidia.com/gpu=all= and at least one indexed device) and
+that =--device nvidia.com/gpu=all= was actually passed to this specific
+=run= command — an existing container started without it does not pick
+up the GPU retroactively; start a new one.
+
+*** The demo itself
+
 The instructor now shows the CUDA counterpart of the *addition* example
 (a simpler kernel than multiplication, chosen so the demo stays short),
-provided at =code/demo/soma_matrix_cuda.c= (with a =Makefile= — CUDA
-toolkit required, instructor's machine only), on the room's GPU machine:
+provided at =code/demo/soma_matrix_cuda.c= (with a =Makefile=), inside
+this container:
 
 #+begin_src c
 struct starpu_codelet codelet_soma =
