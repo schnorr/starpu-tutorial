@@ -3,8 +3,7 @@
 #include <starpu.h>
 
 /* Reference solution for the Session 2, Part B exercise (see
- * handouts/session2.org). Equivalent to capitulo/exemplos/soma_matrix.c,
- * renamed/reformatted to match the skeleton in ../skeleton/matrix_add.c. */
+ * ../../../handout.org), matching the skeleton in ../skeleton/matrix_add.c. */
 
 #define MATRIX_WIDTH 10
 #define BLOCK_WIDTH 2

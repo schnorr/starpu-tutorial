@@ -9,11 +9,10 @@
 * About this handout                                                :ignore:
 
 Student handout for Session 2 of the StarPU tutorial (11:00-13:00,
-120 min, guided hands-on). See =../roteiro-minicurso.org= (in the
-project repository this package was generated from) for how this
-session fits into the full-day schedule. Everything here runs on CPU
-only, inside the official StarPU Docker/Podman image — no GPU is needed
-for this session.
+120 min, guided hands-on — see =../README.org= for how this session
+fits into the full-day schedule). Everything here runs on CPU only,
+inside the official StarPU Docker/Podman image — no GPU is needed for
+this session.
 
 Every exercise's skeleton and reference solution is included in this
 package under =code/= (see each section below) — try to write the code
@@ -366,13 +365,12 @@ If you want to compare your answer, or you're stuck, see
 (=mount/part_b/solution/matrix_add.c= inside the container) — same
 exercise, already complete, also with its own =Makefile=.
 
-** Optional: the official tutorial's version
+** Optional: another way to partition
 
-The full project repository this package was generated from also has
-=starpu-docker/tutorial/C/partition/mult.c=, =mult_task.c= and
-=mult_args.c=, which solve a related (matrix multiplication, not
-addition) partitioning problem using =starpu_data_partition= directly on
-a full matrix instead of pre-splitting it into independent blocks — not
-included in this package, but worth a look after the tutorial as a
+StarPU's own tutorial includes a related (matrix multiplication, not
+addition) partitioning example that solves the same kind of problem
+using =starpu_data_partition= directly on a full matrix, instead of
+pre-splitting it into independent blocks like you just did — not
+included in this package, but worth looking up after the tutorial as a
 second style of doing the same thing, and as a preview of the
 multiplication example used in Session 3.

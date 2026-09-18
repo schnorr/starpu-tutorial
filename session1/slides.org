@@ -25,13 +25,8 @@
 * About this deck                                                   :noexport:
 
 Session 1 lecture slides for the StarPU tutorial (09:00-10:30, 90 min).
-See =../../roteiro-minicurso.org= (in the project repository this
-package was generated from) for how this session fits into the
-full-day schedule, and for the source material this deck is adapted
-from (mainly =slide/2020_ERAD_STARPU.org= and Samuel Thibault's
-=prev-slides/26-web.odp=, both in Portuguese/English research-seminar
-form — this deck is a fresh, English, 90-minute-paced rewrite, not a
-translation).
+See =../README.org= for how this session fits into the full-day
+schedule.
 
 Target timing (trim the "Find the largest element" walkthrough first
 if running long — it is illustrative, not load-bearing):

@@ -9,9 +9,8 @@
 * About this handout                                                :ignore:
 
 Student handout for Session 3 of the StarPU tutorial (14:30-16:00,
-90 min, guided hands-on). See =../roteiro-minicurso.org= (in the project
-repository this package was generated from) for how this session fits
-into the full-day schedule.
+90 min, guided hands-on — see =../README.org= for how this session fits
+into the full-day schedule).
 
 Part A's exercise runs on CPU only — no GPU needed on your laptop. The
 GPU codelet in Part A is run by the instructor on the room's GPU
@@ -171,12 +170,10 @@ Watch for:
 the simplest possible CPU-vs-GPU codelet, chosen so the concept stays
 visible. StarPU's own tutorial ships a realistic equivalent that calls
 into real BLAS/cuBLAS/hipBLAS libraries for actual GEMM (matrix-matrix
-product), in the full project repository at
-=starpu-docker/tutorial/C/gemm/= (=dgemm.c=, =sgemm.c=, =xgemm.c= +
-=common/blas.c=, =common/blas_model.c=; not included in this package).
-It is not live-coded in this tutorial — the Makefile/BLAS-backend
-plumbing would eat the time budget — but it's worth opening after the
-tutorial to see "what this looks like for a real numerical kernel".
+product) — not included in this package, but worth looking up after the
+tutorial to see "what this looks like for a real numerical kernel". It
+is not live-coded here since the Makefile/BLAS-backend plumbing would
+eat the time budget.
 
 * Part B — Execution traces and StarVZ visualization (~45 min)
 
@@ -281,7 +278,4 @@ Repeat trace acquisition + Phase 1 + Phase 2 for:
 
 ** Reference material
 
-- In the full project repository: =slide/2020_ERAD_STARPU.org= lines
-  1231-1355 and =capitulo/erad_2020_minicurso_starpu.org= lines
-  954-1097 (original Portuguese walkthrough this handout is based on).
 - StarVZ repository: https://github.com/schnorr/starvz

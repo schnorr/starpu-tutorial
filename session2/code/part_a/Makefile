@@ -15,10 +15,10 @@
 #
 
 # Trimmed for Session 2, Part A: only the three programs used in this
-# session are built here (upstream also builds a "variables" example, not
-# needed for this session — see the full starpu-docker/tutorial/C/Makefile
-# for that). The CUDA/OpenCL implementations are still built when the
-# installed StarPU has that support enabled: vector_scal_task_insert.c
+# session are built here (StarPU's own tutorial also builds a "variables"
+# example, not needed for this session). The CUDA/OpenCL implementations
+# are still built when the installed StarPU has that support enabled:
+# vector_scal_task_insert.c
 # conditionally references them via #ifdef STARPU_USE_CUDA/STARPU_USE_OPENCL
 # (a property of the StarPU install, not of this Makefile), so the object/
 # library must be available whenever the headers enable it, even though
