@@ -253,11 +253,18 @@ tutorial Docker image). Enable it with two environment variables, then
 rerun any program you already built:
 
 #+begin_src bash
-STARPU_FXT_PREFIX=$PWD/ STARPU_GENERATE_TRACE=1 ./multi_matrix
+STARPU_FXT_TRACE=1 STARPU_FXT_PREFIX=$PWD/ ./multi_matrix
 #+end_src
 
-This produces one or more =prof_*= files (raw FxT trace) in the current
-directory — one per StarPU worker thread.
+=STARPU_FXT_TRACE=1= is the one that actually turns tracing *on* — it
+is easy to miss, and without it no trace file is produced at all, no
+error either. This produces one or more =prof_*= files (the *raw* FxT
+trace) in =STARPU_FXT_PREFIX= — one per StarPU worker thread. That is
+the only input Phase 1 below needs; do *not* also set
+=STARPU_GENERATE_TRACE=1= here — that flag makes StarPU run its own
+copy of =starpu_fxt_tool= at shutdown, which is redundant with (and can
+conflict with) Phase 1 below invoking =starpu_fxt_tool= itself on the
+same raw trace.
 
 ** Installing StarVZ (skip if already provided in the image)
 
