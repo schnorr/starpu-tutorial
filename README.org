@@ -21,11 +21,11 @@ break between Sessions 1 and 2 and a lunch break between Sessions 2 and
 3. An optional buffer slot follows Session 3 for unfinished exercises or
 Q&A, used only if needed.
 
-| Session                        | Time        | Duration | Format          | Summary                                                                 |
-|---------------------------------+-------------+----------+-----------------+--------------------------------------------------------------------------|
-| [[file:session1/slides.org][Session 1 — Foundations]]        | 09:00–10:30 | 90 min   | Lecture         | The task-based paradigm, DAGs of tasks/data/dependencies, and the StarPU runtime model: the STF execution model, workers, codelets, data handles, and a scheduling overview. |
-| [[file:session2/handout.org][Session 2 — First programs]]     | 11:00–13:00 | 120 min  | Guided hands-on | Environment setup (Docker/Podman); three progressively richer StarPU programs (sequential → task-based → data-partitioned); a block-matrix-addition exercise with data partitioning. |
-| [[file:session3/handout.org][Session 3 — Heterogeneity]]      | 14:30–16:00 | 90 min   | Guided hands-on | CPU/GPU heterogeneity via multi-implementation codelets, with an instructor-led CPU-vs-GPU demo; recording and visualizing execution traces with StarVZ. |
+| Session                    | Time        | Duration | Format          | Summary                                                                                                                                                                              |
+|----------------------------+-------------+----------+-----------------+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| [[file:session1/slides.org][Session 1 — Foundations]]    | 09:00–10:30 | 90 min   | Lecture         | The task-based paradigm, DAGs of tasks/data/dependencies, and the StarPU runtime model: the STF execution model, workers, codelets, data handles, and a scheduling overview.         |
+| [[file:session2/handout.org][Session 2 — First programs]] | 11:00–13:00 | 120 min  | Guided hands-on | Environment setup (Docker/Podman); three progressively richer StarPU programs (sequential → task-based → data-partitioned); a block-matrix-addition exercise with data partitioning. |
+| [[file:session3/handout.org][Session 3 — Heterogeneity]]  | 14:30–16:00 | 90 min   | Guided hands-on | CPU/GPU heterogeneity via multi-implementation codelets, with an instructor-led CPU-vs-GPU demo; recording and visualizing execution traces with StarVZ.                             |
 
 By the end of the day, participants will have written and run their own
 StarPU programs on CPU, understood how StarPU infers task dependencies
