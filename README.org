@@ -86,7 +86,7 @@ though they are =code/...= on the host), except =session3/code/demo/=,
 which additionally needs a CUDA toolkit and is meant to be built on the
 instructor's GPU machine, not by participants.
 
-* Known gaps
+* Known gaps                                                       :noexport:
 
 - *Two Session 1 figures are still labeled in Portuguese*:
   =session1/img/starpu_modelo.png= (all labels) and
