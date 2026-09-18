@@ -133,7 +133,6 @@ If you want to compare your answer, or you're stuck, see
 exercise, already complete, with its own =Makefile=.
 
 ** Instructor demo: adding the GPU implementation
-
 *** Running the container with GPU access (instructor only)
 
 One-time setup on the GPU machine (only needed once, not per session):
@@ -170,19 +169,40 @@ that =--device nvidia.com/gpu=all= was actually passed to this specific
 =run= command — an existing container started without it does not pick
 up the GPU retroactively; start a new one.
 
+*** Warm-up: do this *before* the audience is watching
+
+The *first* time any CUDA program runs inside a given container, StarPU
+prints "No performance model for the bus, calibrating..." and spends
+*60-90 seconds* actually measuring host↔GPU transfer bandwidth — it
+looks like the program hung, it did not. This calibration result is
+cached under =~/.starpu/= *inside the container's own filesystem*, so:
+- Running the demo a second time *in the same container* is near-instant
+  (well under a second) — no calibration message, cache hit.
+- Exiting the container (or using =--rm= and starting a fresh one, as
+  above) throws that cache away, so the *next* container's first CUDA
+  run pays the same 60-90s again.
+
+So: right after starting the container above, build and run the demo
+*once* before the session (or before the audience is looking at the
+screen) to pay that cost up front, then keep *that same* container/shell
+open for the actual live demo — don't exit and restart it between runs,
+or you will be back to a silent 60-90s wait live on stage.
+
+#+begin_src bash
+cd mount/demo
+make
+./soma_matrix_cuda   # first run: ~60-90s, "calibrating..." — do this before the audience arrives
+./soma_matrix_cuda   # second run, same container: near-instant — this is what to demo live
+#+end_src
+
 *** The demo itself
 
 The instructor now shows the CUDA counterpart of the *addition* example
 (a simpler kernel than multiplication, chosen so the demo stays short),
 provided at =code/demo/soma_matrix_cuda.c= on the host
 (=mount/demo/soma_matrix_cuda.c= inside the container, with a
-=Makefile=):
-
-#+begin_src bash
-cd mount/demo
-make
-./soma_matrix_cuda
-#+end_src
+=Makefile=) — already built and warmed up above, so =./soma_matrix_cuda=
+from here on returns instantly:
 
 #+begin_src c
 struct starpu_codelet codelet_soma =
