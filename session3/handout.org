@@ -285,7 +285,14 @@ podman load -i starvz-image.tar
 ** Starting the StarVZ container
 
 #+begin_src shell :results output :exports both :eval no-export
-docker run -it --mount type=bind,src="$(pwd)/code",target=/home/rstudio/mount docker.io/viniciusvgp/starvz-tutorial
+# Podman:
+podman run -it --userns=keep-id \
+    --mount type=bind,src="$(pwd)/code",target=/home/rstudio/mount \
+    docker.io/viniciusvgp/starvz:latest
+# Docker (real dockerd, not Podman's compatibility shim):
+docker run -it --user "$(id -u):$(id -g)" \
+    --mount type=bind,src="$(pwd)/code",target=/home/rstudio/mount \
+    docker.io/viniciusvgp/starvz:latest
 #+end_src
 
 *** Local Image Instructions                                       :noexport:
