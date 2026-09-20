@@ -276,18 +276,18 @@ docker run -it --mount type=bind,src="$(pwd)/code",target=/home/rstudio/mount st
 *** Local Image Instructions                                       :noexport:
 Pull image
 #+begin_src sh :results output :exports both :eval no-export
-docker pull viniciusvgp/starvz:latest
+docker pull docker.io/viniciusvgp/starvz:latest
 #+end_src
 
 Save it to tar and/or zst, in two steps
 #+begin_src sh :results output :exports both :eval no-export
-docker save -o starvz-image.tar viniciusvgp/starvz:latest
+docker save -o starvz-image.tar docker.io/viniciusvgp/starvz:latest
 cat starvz-image.tar | zstd -T0 -19 -o starvz-image.tar.zst
 #+end_src
 
 Or in a single step:
 #+begin_src sh :results output :exports both :eval no-export
-podman save viniciusvgp/starvz:latest | zstd -T0 -19 -o starvz-image.tar.zst
+podman save docker.io/viniciusvgp/starvz:latest | zstd -T0 -19 -o starvz-image.tar.zst
 #+end_src
 
 Zst version is much smaller but not sure all students have Zstd
