@@ -318,21 +318,6 @@ installed, so the tar one is a fallback.
 ls -lth starvz-image.*
 #+end_src
 
-** Installing StarVZ (skip if already provided in the image)
-StarVZ is available at CRAN (https://cran.r-project.org/package=starvz).
-#+begin_src bash
-
-# StarVZ depends on pajeng and recutils
-apt install -y pajeng recutils
-
-# For R
-apt install -y r-base libxml2-dev libssl-dev libcurl4-openssl-dev libgit2-dev libboost-dev
-
-# install StarVZ from CRAN
-echo "install.packages('starvz', repos = 'https://cloud.r-project.org')" | R --vanilla
-printf '%s\n' 'export PATH=$(Rscript -e '\''cat(system.file("tools/", package = "starvz"), sep="\\n")'\''):$PATH' >> ~/.bashrc
-#+end_src
-
 ** Phase 1 — convert the raw trace 
 
 The option =--use-paje-trace= skips the local call of =starpu_fxt_tool=
