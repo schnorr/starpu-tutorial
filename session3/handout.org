@@ -259,8 +259,8 @@ STARPU_FXT_TRACE=1 STARPU_GENERATE_TRACE=1 STARPU_FXT_PREFIX=$PWD/ ./multi_matri
 =STARPU_FXT_TRACE=1= is the one that actually turns tracing *on* — it is
 easy to miss, and without it no trace file is produced at all, no
 error either. This produces one or more =prof_*= files (the *raw* FxT
-trace) in =STARPU_FXT_PREFIX= — one per StarPU main thread. That is the
-only input Phase 1 below needs; set =STARPU_GENERATE_TRACE=1= here —
+trace) in =STARPU_FXT_PREFIX= — one per StarPU main thread. That is
+the only input Phase 1 below needs; set =STARPU_GENERATE_TRACE=1= here —
 that flag makes StarPU run its own copy of =starpu_fxt_tool= at
 shutdown. This step might be invoked by StarVZ Phase on the same raw
 trace, however, it requires a compatible StarPU build at the StarVZ
