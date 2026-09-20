@@ -253,54 +253,94 @@ tutorial Docker image). Enable it with two environment variables, then
 rerun any program you already built:
 
 #+begin_src bash
-STARPU_FXT_TRACE=1 STARPU_FXT_PREFIX=$PWD/ ./multi_matrix
+STARPU_FXT_TRACE=1 STARPU_GENERATE_TRACE=1 STARPU_FXT_PREFIX=$PWD/ ./multi_matrix
 #+end_src
 
-=STARPU_FXT_TRACE=1= is the one that actually turns tracing *on* — it
-is easy to miss, and without it no trace file is produced at all, no
+=STARPU_FXT_TRACE=1= is the one that actually turns tracing *on* — it is
+easy to miss, and without it no trace file is produced at all, no
 error either. This produces one or more =prof_*= files (the *raw* FxT
-trace) in =STARPU_FXT_PREFIX= — one per StarPU worker thread. That is
-the only input Phase 1 below needs; do *not* also set
-=STARPU_GENERATE_TRACE=1= here — that flag makes StarPU run its own
-copy of =starpu_fxt_tool= at shutdown, which is redundant with (and can
-conflict with) Phase 1 below invoking =starpu_fxt_tool= itself on the
-same raw trace.
+trace) in =STARPU_FXT_PREFIX= — one per StarPU main thread. That is the
+only input Phase 1 below needs; set =STARPU_GENERATE_TRACE=1= here —
+that flag makes StarPU run its own copy of =starpu_fxt_tool= at
+shutdown. This step might be invoked by StarVZ Phase on the same raw
+trace, however, it requires a compatible StarPU build at the StarVZ
+container, which is not the case here.
+
+** Getting and starting the StarVZ container
+#+begin_src bash
+docker pull viniciusvgp/starvz:latest
+
+docker run -it --mount type=bind,src="$(pwd)/code",target=/home/rstudio/mount starvz-tutorial
+#+end_src
+
+*** Local Image Instructions                                       :noexport:
+Pull image
+#+begin_src sh :results output :exports both :eval no-export
+docker pull viniciusvgp/starvz:latest
+#+end_src
+
+Save it to tar and/or zst, in two steps
+#+begin_src sh :results output :exports both :eval no-export
+docker save -o starvz-image.tar viniciusvgp/starvz:latest
+cat starvz-image.tar | zstd -T0 -19 -o starvz-image.tar.zst
+#+end_src
+
+Or in a single step:
+#+begin_src sh :results output :exports both :eval no-export
+podman save viniciusvgp/starvz:latest | zstd -T0 -19 -o starvz-image.tar.zst
+#+end_src
+
+Zst version is much smaller but not sure all students have Zstd
+installed, so the tar one is a fallback.
+#+begin_src shell :results output :exports both :eval no-export
+ls -lth starvz-image.*
+#+end_src
+
 
 ** Installing StarVZ (skip if already provided in the image)
-
+StarVZ is available at CRAN (https://cran.r-project.org/package=starvz).
 #+begin_src bash
-git clone https://github.com/schnorr/starvz.git
-apt install -y r-base libxml2-dev libssl-dev \
-    libcurl4-openssl-dev libgit2-dev libboost-dev
-./starvz/R/install.R
 
-# pajeng (FxT -> Paje trace converter used by StarVZ's phase 1)
-apt install -y git cmake build-essential \
-    libboost-dev asciidoc flex bison
-git clone git://github.com/schnorr/pajeng.git
-mkdir -p pajeng/b && cd pajeng/b
-cmake ..
-make
+# StarVZ depends on pajeng and recutils
+apt install -y pajeng recutils
+
+# For R
+apt install -y r-base libxml2-dev libssl-dev libcurl4-openssl-dev libgit2-dev libboost-dev
+
+# install StarVZ from CRAN
+echo "install.packages('starvz', repos = 'https://cloud.r-project.org')" | R --vanilla
+printf '%s\n' 'export PATH=$(Rscript -e '\''cat(system.file("tools/", package = "starvz"), sep="\\n")'\''):$PATH' >> ~/.bashrc
 #+end_src
 
-** Phase 1 — convert the raw trace
+** Phase 1 — convert the raw trace 
 
+The option =--use-paje-trace= skips the local call of =starpu_fxt_tool=
+since it is already accomplished by =STARPU_GENERATE_TRACE=1= in the
+previous step.
 #+begin_src bash
-export PATH=starvz/:$PATH
-export PATH=pajeng/b:$PATH
-export PATH=$STARPU_HOME/bin:$PATH
-./starvz/src/phase1-workflow.sh ./ ""
+starvz --use-paje-trace --keep --phase1 ./
 #+end_src
 
-This turns the =prof_*= FxT files into =.feather= files (columnar data,
+This turns the =prof_*= FxT files into =.parquet= files (columnar data,
 readable from R) in the same directory.
 
 ** Phase 2 — load, configure, and plot (in R)
+The =starvz= wrapper can produce a standard visualization in PDF without
+navigate in the R console.
+#+begin_src bash
+starvz --phase2 --save starvz_plot.pdf ./
+#+end_src
+
+The default visualization can be customized by executing the second
+step directly in R. StarVZ enables a set of different plots that can
+be configured on a .yaml file. A default file is provided
+(default.yaml); also, the options can be changed directly in R.
 
 #+begin_src R
 library(starvz)
-dtrace <- the_fast_reader_function("./")
-pajer <- config::get(file = "starvz/full_config.yaml")
+library(dplyr)
+
+dtrace <- starvz_read("./", selective = FALSE)
 #+end_src
 
 Turn on the panels that matter most for a first look — submitted vs.
@@ -308,12 +348,12 @@ ready task curves (this is what answers "was there ever an idle
 worker with tasks piling up ready to run?"):
 
 #+begin_src R
-pajer$starpu$active = FALSE
-pajer$submitted$active = TRUE
-pajer$submitted$height  = 1
-pajer$ready$active = TRUE
-pajer$ready$height  = 1
-pajer$st$labels = "ALL"
+dtrace$config$starpu$active = FALSE
+dtrace$config$submitted$active = TRUE
+dtrace$config$submitted$height  = 1
+dtrace$config$ready$active = TRUE
+dtrace$config$ready$height  = 1
+dtrace$config$st$labels = "ALL"
 #+end_src
 
 Then render it:
@@ -351,3 +391,4 @@ Repeat trace acquisition + Phase 1 + Phase 2 for:
 ** Reference material
 
 - StarVZ repository: https://github.com/schnorr/starvz
+- StarPU Handbook -- Trace visualization with StarVZ: https://files.inria.fr/starpu/doc/html/OfflinePerformanceTools.html#starvz
