@@ -266,11 +266,26 @@ shutdown. This step might be invoked by StarVZ Phase on the same raw
 trace, however, it requires a compatible StarPU build at the StarVZ
 container, which is not the case here.
 
-** Getting and starting the StarVZ container
+** Getting the StarVZ container
+*** From docker hub
+
 #+begin_src bash
 docker pull docker.io/viniciusvgp/starvz:latest
+#+end_src
 
-docker run -it --mount type=bind,src="$(pwd)/code",target=/home/rstudio/mount starvz-tutorial
+*** From the starvz-image.tar.zst or starvz-image.tar
+
+Loading image at podman/docker
+#+begin_src shell :results output :exports both :eval no-export
+zstd -dc starvz-image.tar.zst | podman load
+# or
+podman load -i starvz-image.tar
+#+end_src
+
+** Starting the StarVZ container
+
+#+begin_src shell :results output :exports both :eval no-export
+docker run -it --mount type=bind,src="$(pwd)/code",target=/home/rstudio/mount docker.io/viniciusvgp/starvz-tutorial
 #+end_src
 
 *** Local Image Instructions                                       :noexport:
@@ -295,7 +310,6 @@ installed, so the tar one is a fallback.
 #+begin_src shell :results output :exports both :eval no-export
 ls -lth starvz-image.*
 #+end_src
-
 
 ** Installing StarVZ (skip if already provided in the image)
 StarVZ is available at CRAN (https://cran.r-project.org/package=starvz).
