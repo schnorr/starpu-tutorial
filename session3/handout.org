@@ -268,7 +268,7 @@ container, which is not the case here.
 
 ** Getting and starting the StarVZ container
 #+begin_src bash
-docker pull viniciusvgp/starvz:latest
+docker pull docker.io/viniciusvgp/starvz:latest
 
 docker run -it --mount type=bind,src="$(pwd)/code",target=/home/rstudio/mount starvz-tutorial
 #+end_src
