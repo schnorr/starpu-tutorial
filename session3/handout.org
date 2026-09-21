@@ -42,7 +42,6 @@ under =mount/= instead of =code/= (e.g. =mount/exercise/multi_matrix.c=).
 All =cd=/build commands below already use the =mount/...= form.
 
 * Part A — Heterogeneous codelets: CPU and GPU (~45 min)
-
 ** Recap: what a codelet's "implementations" are
 
 A StarPU codelet can list more than one implementation of the same
