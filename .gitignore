@@ -1,0 +1,39 @@
+# Compiled binaries produced by the Makefiles under code/ (same basename
+# as their .c source, no extension)
+session2/code/part_a/vector_scal0
+session2/code/part_a/vector_scal_task_insert
+session2/code/part_a/vector_scal_task_insert_filter
+session2/code/part_b/skeleton/matrix_add
+session2/code/part_b/solution/matrix_add
+session3/code/exercise/multi_matrix
+session3/code/solution/multi_matrix_two_impl
+session3/code/demo/soma_matrix_cuda
+*.o
+
+# StarPU FxT traces and StarVZ Phase 1/2 generated artifacts (produced by
+# running the exercises with STARPU_FXT_TRACE=1 / STARPU_GENERATE_TRACE=1
+# and by the StarVZ phase1/phase2 workflow), left behind in code/*/
+# whenever someone builds+runs+traces directly in this mounted tree.
+prof_file*
+prof_*
+paje.trace
+paje.sorted.trace.gz
+paje.csv.gz
+dag.dot
+dag.csv.gz
+atree.dot
+atree.csv
+entities.csv
+types.csv
+data.rec
+tasks.rec
+sched_tasks.rec
+comms.rec
+trace.rec
+activity.data
+distrib.data
+trace.html
+starpu.log
+*.feather
+*.parquet
+*.csv.gz
