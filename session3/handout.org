@@ -142,21 +142,16 @@ exercise, already complete, with its own =Makefile=.
 
 One-time setup on the GPU machine (only needed once, not per session):
 generate the NVIDIA CDI spec so Podman/Docker can see the GPU at all —
-without this, =--device=/=--gpus= silently finds nothing:
+without this, the =--device nvidia.com/gpu=all= flag already in the
+"Run the container" command above silently finds nothing:
 
 #+begin_src bash
 sudo nvidia-ctk cdi generate --output=/etc/cdi/nvidia.yaml
 sudo chmod a+r /etc/cdi/nvidia.yaml
 #+end_src
 
-Then start the container the same way as the student flow above, just
-adding =--device nvidia.com/gpu=all=:
-
-#+begin_src bash
-podman run -it --userns=keep-id --device nvidia.com/gpu=all \
-    --mount type=bind,src="$(pwd)/code",target=/home/starpu/mount \
-    registry.gitlab.inria.fr/starpu/starpu-docker/starpu:1.4.7
-#+end_src
+Start the container the same way as above (no extra flags needed here —
+=--device nvidia.com/gpu=all= is already part of the standard command).
 
 Confirm StarPU actually sees the GPU before going further:
 
