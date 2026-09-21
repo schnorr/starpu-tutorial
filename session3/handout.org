@@ -242,8 +242,7 @@ eat the time budget.
 * Part B — Execution traces and StarVZ visualization (~45 min)
 
 Goal: stop guessing which worker ran which task, and *see* it — using
-the same programs you already ran in Part A (and Session 2) as trace
-sources.
+the same programs you already ran in Part A as trace sources.
 
 ** Recording a trace
 
