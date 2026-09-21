@@ -23,15 +23,21 @@ This session mounts a *different* host directory than Session 2 (this
 package's =session3/code/=, not =session2/code/=), so start a fresh
 container from inside =session3/= — same image, same flags, see
 =../session2/handout.org= ("Run the container") for why each flag is
-needed if you haven't read it yet:
+needed if you haven't read it yet. Unlike Session 2, this container also
+requests GPU access (=--device nvidia.com/gpu=all=) so that a GPU worker
+is available if this machine has one — see "Running the container with
+GPU access" below for the one-time CDI setup that flag depends on. *If
+your laptop has no NVIDIA GPU, delete =--device nvidia.com/gpu=all= from
+the command below* — with no GPU/CDI configured, that flag makes the
+container refuse to start at all, rather than just skipping the GPU:
 
 #+begin_src bash
 # Podman:
-podman run -it --userns=keep-id \
+podman run -it --userns=keep-id --device nvidia.com/gpu=all \
     --mount type=bind,src="$(pwd)/code",target=/home/starpu/mount \
     registry.gitlab.inria.fr/starpu/starpu-docker/starpu:1.4.7
 # Docker (real dockerd, not Podman's compatibility shim):
-docker run -it --user "$(id -u):$(id -g)" \
+docker run -it --user "$(id -u):$(id -g)" --device nvidia.com/gpu=all \
     --mount type=bind,src="$(pwd)/code",target=/home/starpu/mount \
     registry.gitlab.inria.fr/starpu/starpu-docker/starpu:1.4.7
 #+end_src
