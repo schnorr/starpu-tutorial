@@ -44,9 +44,6 @@ The previous one-day, three-session version of this tutorial (CARLA 2026) is at 
 | =traces/nb2=, =traces/nb8=      | Traces of =gemm_starpu 2048 2= and =2048 8=, 6 CPU workers, after StarVZ Phase 1 |
 | =traces/gpu_eager=, =gpu_dmda=  | Traces of =gemm_starpu 2048 8= with 6 CPU workers and 1 GPU, schedulers =eager= and =dmda= |
 
-The programs in =examples/= are the same files as =capitulo/examples/=
-of the chapter sources; change them in both places.
-
 * Preparing the machines
 
 ** Images
@@ -109,7 +106,7 @@ pdflatex -interaction=nonstopmode slides.tex
 
 * Regenerating the traces
 
-=traces/nb2= and =traces/nb8= come from the chapter's laptop (6
+=traces/nb2= and =traces/nb8= come from the instructors' laptop (6
 performance cores, =STARPU_WORKERS_CPUID="0 2 4 6 8 10"=); the GPU traces
 from the same laptop with its NVIDIA RTX A1000. To record new ones,
 follow Hands-on 3 of the handout, then copy the =.parquet= files of each
