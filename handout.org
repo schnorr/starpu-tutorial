@@ -368,7 +368,6 @@ set =STARVZ_IMG= again, and run:
 podman run -it --rm --userns=keep-id --entrypoint bash \
     --mount type=bind,src="$(pwd)",target=/home/rstudio/mount \
     $STARVZ_IMG
-alias starvz=$(Rscript -e 'cat(system.file("tools", package="starvz"))')/starvz
 cd ~/mount/examples
 #+end_src
 
