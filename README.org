@@ -15,7 +15,7 @@ Thibault), presented as Minicurso 3 at SSCAD 2026: Tuesday 2026-11-03,
 short expositions with hands-on parts that run the programs of the
 chapter in Podman containers.
 
-The previous one-day, three-session version of this tutorial (CARLA 2026) is at the git tag =CARLA2026=.
+The previous one-day, three-session version of this tutorial (CARLA 2026) is at the git tag [[https://github.com/schnorr/starpu-tutorial/tree/CARLA2026][CARLA2026]].
 
 * Schedule
 
