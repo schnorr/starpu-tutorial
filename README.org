@@ -1,87 +1,117 @@
 # -*- coding: utf-8 -*-
 # -*- mode: org -*-
 
-#+TITLE: StarPU Tutorial — Material Package
+#+TITLE: StarPU Minicurso --- Material Package
 #+LANGUAGE: en
-#+OPTIONS: toc:2 num:t
+#+OPTIONS: toc:2 num:t ^:nil
 
 * What this is                                                      :ignore:
 
-Self-contained package for the StarPU tutorial: a one-day, three-session
-introduction to the task-based parallel programming paradigm using the
-StarPU runtime. Session 1 is a lecture on the concepts and the StarPU
-model; Sessions 2 and 3 are guided hands-on labs, each with a student
-handout, exercise skeletons, and reference solutions. Everything a
-participant or instructor needs for the day is under this directory.
+Companion repository of the book chapter /Development of Parallel
+Applications with the Task-Based Paradigm and the StarPU Runtime/
+(Lucas Mello Schnorr, Vinícius Garcia Pinto, Raymond Namyst, Samuel
+Thibault), presented as Minicurso 3 at SSCAD 2026: Tuesday 2026-11-03,
+14:00--16:10, Lab DIMAp. The 130 minutes, without break, alternate
+short expositions with hands-on parts that run the programs of the
+chapter in Podman containers.
 
-* Sessions overview
+The previous one-day, three-session version of this tutorial (CARLA
+2026) is kept at the git tag =CARLA2026=.
 
-The tutorial runs as three sessions in a single day, with a coffee
-break between Sessions 1 and 2 and a lunch break between Sessions 2 and
-3. An optional buffer slot follows Session 3 for unfinished exercises or
-Q&A, used only if needed.
+* Schedule
 
-| Session                    | Time        | Duration | Format          | Summary                                                                                                                                                                              |
-|----------------------------+-------------+----------+-----------------+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| [[file:session1/slides.org][Session 1 — Foundations]]    | 09:00–10:30 | 90 min   | Lecture         | The task-based paradigm, DAGs of tasks/data/dependencies, and the StarPU runtime model: the STF execution model, workers, codelets, data handles, and a scheduling overview.         |
-| [[file:session2/handout.org][Session 2 — First programs]] | 11:00–13:00 | 120 min  | Guided hands-on | Environment setup (Docker/Podman); three progressively richer StarPU programs (sequential → task-based → data-partitioned); a block-matrix-addition exercise with data partitioning. |
-| [[file:session3/handout.org][Session 3 — Heterogeneity]]  | 14:30–16:00 | 90 min   | Guided hands-on | CPU/GPU heterogeneity via multi-implementation codelets, with an instructor-led CPU-vs-GPU demo; recording and visualizing execution traces with StarVZ.                             |
-
-By the end of the day, participants will have written and run their own
-StarPU programs on CPU, understood how StarPU infers task dependencies
-and parallelism from data accesses, seen how the same codelet structure
-extends to GPU execution, and used execution traces to see what the
-runtime actually did rather than just measuring wall-clock time.
+| Time  | Min | Part                                  | Material                          |
+|-------+-----+---------------------------------------+-----------------------------------|
+| 14:00 |  10 | Opening, start the containers         | [[file:handout.org][handout]], slides "Opening"         |
+| 14:10 |  15 | Exposition: tasks, DAG, STF           | slides "Concepts", chapter 3.1--3.2 |
+| 14:25 |  15 | Hands-on 1: first programs            | handout, =hello_world=, =vector_scal= |
+| 14:40 |  15 | Exposition: the StarPU runtime        | slides "The StarPU runtime", chapter 3.3 |
+| 14:55 |  30 | Hands-on 2: tiled GEMM, GPU demo      | handout, =gemm_starpu_todo=, =gemm_starpu= |
+| 15:25 |  10 | Exposition: observing executions      | slides "Observing", chapter 3.5   |
+| 15:35 |  25 | Hands-on 3: traces and StarVZ         | handout, =starvz_compare.R=       |
+| 16:00 |  10 | Closing, questions                    | slides "Closing"                  |
 
 * Contents
 
-| Path                             | What it is                                                        |
-|-----------------------------------+--------------------------------------------------------------------|
-| =session1/slides.org=             | Session 1 lecture slides (Beamer/org, English, ~90 min of content, 28 frames) |
-| =session1/slides.tex=/=.pdf=      | Already-compiled output (see "Building the slides" below to regenerate) |
-| =session1/img/=                   | Figures used by the slides                                        |
-| =session2/handout.org=            | Session 2 student handout (environment, first program, partitioning) |
-| =session2/code/part_a/=           | The 3 progressive =vector_scal*= programs + trimmed =Makefile=    |
-| =session2/code/part_b/skeleton/=  | Block-matrix-addition exercise skeleton (with =/* TODO */=) + =Makefile= |
-| =session2/code/part_b/solution/=  | Reference solution for the same exercise + =Makefile=             |
-| =session3/handout.org=            | Session 3 student handout (heterogeneity, StarVZ)                 |
-| =session3/code/exercise/=         | Block matrix multiplication starting point (=multi_matrix.c=) + =Makefile= |
-| =session3/code/solution/=         | Same, with a second CPU implementation added + =Makefile=          |
-| =session3/code/demo/=             | Instructor-only CPU/GPU codelet demo (=soma_matrix_cuda.c=) + =Makefile= (needs CUDA toolkit) |
+| Path                            | What it is                                                         |
+|---------------------------------+--------------------------------------------------------------------|
+| =handout.org=                   | Step-by-step guide of the three hands-on parts and the GPU demo    |
+| =slides/slides.org=             | Beamer slides of the expositions (=.tex= and =.pdf= already built) |
+| =slides/img/=                   | Figures of the slides, taken from the chapter                      |
+| =examples/=                     | The programs of the chapter, with their =Makefile=                 |
+| =examples/gemm_starpu_todo.c=   | Exercise of Hands-on 2: =gemm_starpu.c= without the task submission |
+| =examples/starvz_compare.R=     | Draws two traces side by side (Figure 3.3 of the chapter)          |
+| =examples/starvz_compare.yaml=  | StarVZ configuration used by the script (Listing 3.13)             |
+| =traces/nb2=, =traces/nb8=      | Traces of =gemm_starpu 2048 2= and =2048 8=, 6 CPU workers, after StarVZ Phase 1 |
+| =traces/gpu_eager=, =gpu_dmda=  | Traces of =gemm_starpu 2048 8= with 6 CPU workers and 1 GPU, schedulers =eager= and =dmda= |
+
+The programs in =examples/= are the same files as =capitulo/examples/=
+of the chapter sources; change them in both places.
+
+* Preparing the machines
+
+** Images
+
+Both are pulled once, before the session (about 8 GB and 4 GB):
+
+#+begin_src bash
+podman pull registry.gitlab.inria.fr/starpu/starpu-docker/starpu:latest
+podman pull docker.io/viniciusvgp/starvz:latest
+#+end_src
+
+Tested with the =latest= StarPU image of 2026-08-19 (StarPU 1.4.12,
+built with CUDA, OpenCL and FxT; digest
+=sha256:4d7355351ed4ac5f8f0eb3129f434ca601f606c1688699906492f0a937419763=)
+and the StarVZ image of 2026-09-19 (StarVZ 0.8.4).
+
+To install them on machines without network access, save them once and
+load them from a disk:
+
+#+begin_src bash
+podman save registry.gitlab.inria.fr/starpu/starpu-docker/starpu:latest | zstd -T0 -19 -o starpu-image.tar.zst
+podman save docker.io/viniciusvgp/starvz:latest | zstd -T0 -19 -o starvz-image.tar.zst
+zstd -dc starpu-image.tar.zst | podman load     # on each machine
+zstd -dc starvz-image.tar.zst | podman load
+#+end_src
+
+** Instructor's machine (GPU demo)
+
+Podman sees an NVIDIA GPU through the CDI specification, generated once:
+
+#+begin_src bash
+sudo nvidia-ctk cdi generate --output=/etc/cdi/nvidia.yaml
+nvidia-ctk cdi list     # must list nvidia.com/gpu=all
+#+end_src
+
+The cuBLAS of the image predates the GPU, so the CUDA driver compiles
+its kernels at the first CUDA run of a container: about 85 s during
+which the program seems stuck. The demo command of the handout keeps
+this cache (=~/.nv=) and the StarPU calibration (=~/.starpu=) in two
+named volumes, =starpu-nvcache= and =starpu-calib=: run the demo once
+before the session, and later runs, even in new containers, start in a
+second.
 
 * Building the slides
 
-Session 1's =slides.org= is a Beamer deck, so it must be exported with
-=org-beamer-export-to-latex=, not the plain =org-latex-export-to-latex=
-— the latter silently degrades a beamer class file to
-=\section=/=\subsection= instead of =\begin{frame}=, with no error, so
-double-check frame count if you re-export. Requires =(require
-'ox-beamer)= to be loaded first if it isn't already part of your Emacs
-config:
+The slides are a Beamer deck: export them with
+=org-beamer-export-to-latex=, not the plain LaTeX export. They need the
+=metropolis= theme.
 
 #+begin_src bash
+cd slides
 emacs -batch -l ~/.emacs.d/init.el \
   --eval "(require 'ox-beamer)" \
   --eval "(setq enable-local-eval t)" \
   --eval "(setq enable-local-variables t)" \
   slides.org --funcall org-beamer-export-to-latex
 pdflatex -interaction=nonstopmode slides.tex
-pdflatex -interaction=nonstopmode slides.tex   # second pass for cross-references
+pdflatex -interaction=nonstopmode slides.tex
 #+end_src
 
-Needs the =metropolis= Beamer theme (part of most complete TeX Live
-installs) and produces some harmless warnings (older-format included PDFs
-reporting a missing "ProcSets" resource; one overfull vbox) — no code
-listings are used in this deck, so =listing_options.tex= is not needed
-here.
+* Regenerating the traces
 
-* Building the code
-
-Every code subdirectory under =session2/code/= and =session3/code/= has
-its own =Makefile=; =cd= into it and run =make=. All of them assume
-=pkg-config= can find =starpu-1.4= (true inside the tutorial Docker/
-Podman image — see =session2/handout.org= for how to start it *and* for
-why the mounted paths appear as =mount/...= inside the container even
-though they are =code/...= on the host), except =session3/code/demo/=,
-which additionally needs a CUDA toolkit and is meant to be built on the
-instructor's GPU machine, not by participants.
+=traces/nb2= and =traces/nb8= come from the chapter's laptop (6
+performance cores, =STARPU_WORKERS_CPUID="0 2 4 6 8 10"=); the GPU traces
+from the same laptop with its NVIDIA RTX A1000. To record new ones,
+follow Hands-on 3 of the handout, then copy the =.parquet= files of each
+trace directory here.

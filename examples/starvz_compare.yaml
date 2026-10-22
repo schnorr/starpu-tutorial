@@ -1,0 +1,18 @@
+default:
+  base_size: 18
+  st:
+    active: TRUE
+    idleness: TRUE
+    outliers: FALSE
+    legend: FALSE
+    abe:
+      active: TRUE
+  submitted:
+    active: TRUE
+    legend: FALSE
+    step: 5
+  ready:
+    active: TRUE
+    legend: FALSE
+    limit: 64
+    step: 5
