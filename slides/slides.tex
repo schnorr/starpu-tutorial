@@ -1,4 +1,4 @@
-% Created 2026-10-22 Thu 01:04
+% Created 2026-11-02 Mon 18:42
 % Intended LaTeX compiler: pdflatex
 \documentclass[presentation, aspectratio=169]{beamer}
 
@@ -19,40 +19,66 @@
 \setbeamerfont{author}{size=\small}
 \usetheme[numbering=fraction, progressbar=frametitle]{metropolis}
 \author{Lucas Mello Schnorr, Vinícius Garcia Pinto, Raymond Namyst, Samuel Thibault}
-\date{SSCAD 2026 --- Minicurso 3 --- \url{https://github.com/schnorr/starpu-tutorial}}
+\date{SSCAD 2026 --- Minicurso 1 --- \url{https://github.com/schnorr/starpu-tutorial}}
 \title{Development of Parallel Applications with the Task-Based Paradigm and the StarPU Runtime}
 \begin{document}
 
 \setbeamertemplate{navigation symbols}{}
 \maketitle
 \section{Opening}
-\label{sec:orgaf229b2}
+\label{sec:org3a2565e}
 
-\begin{frame}[label={sec:orgcdcca3f},fragile]{Today, 14:00--16:10, no break}
+\begin{frame}[label={sec:org9a26143},fragile]{Today, 10:20--12:30, no break}
  \begin{center}
+\small
 \begin{tabular}{llll}
-14:00 & 10 min & Opening, start the containers & \\
-14:10 & 15 min & Concepts: tasks, DAG, STF & exposition\\
-14:25 & 15 min & \alert{Hands-on 1}: first programs & \texttt{hello\_world}, \texttt{vector\_scal}\\
-14:40 & 15 min & The StarPU runtime & exposition\\
-14:55 & 30 min & \alert{Hands-on 2}: tiled GEMM & \texttt{gemm\_starpu}, GPU demo\\
-15:25 & 10 min & Observing executions & exposition\\
-15:35 & 25 min & \alert{Hands-on 3}: traces and StarVZ & \texttt{starvz}\\
-16:00 & 10 min & Closing, questions & \\
+10:20 & 10 min & Opening, start the containers & \\
+10:30 & 15 min & Concepts: tasks, DAG, STF & exposition\\
+10:45 & 15 min & \alert{Hands-on 1}: first programs & \texttt{hello\_world}, \texttt{vector\_scal}\\
+11:00 & 15 min & The StarPU runtime & exposition\\
+11:15 & 30 min & \alert{Hands-on 2}: tiled GEMM & \texttt{gemm\_starpu}, GPU demo\\
+11:45 & 10 min & Observing executions & exposition\\
+11:55 & 25 min & \alert{Hands-on 3}: traces and StarVZ & \texttt{starvz}\\
+12:20 & 10 min & Closing, questions & \\
 \end{tabular}
 \end{center}
 
-Everything is in the companion repository and in the book chapter.
+\small
+Everything is in the companion repository and in the book chapter. \\
+Hands-on guide: \url{https://github.com/schnorr/starpu-tutorial/blob/master/handout.org}
 \end{frame}
-\begin{frame}[label={sec:org2aa901c},fragile]{Start the StarPU container now}
- First load the two images (handout, "Opening": from the archives
-distributed in the room, or with \texttt{podman pull}). Then:
+\begin{frame}[label={sec:orgb00bf1e},fragile]{First of all: get the two images}
+ About 8 GB and 4 GB: start now, the opening goes on meanwhile.
+
+\footnotesize
+\begin{verbatim}
+podman pull registry.gitlab.inria.fr/starpu/starpu-docker/starpu:latest
+podman pull docker.io/viniciusvgp/starvz:latest
+\end{verbatim}
+\normalsize
+
+Or, from the archives distributed in the room:
+
+\footnotesize
+\begin{verbatim}
+zstd -dc starpu-image.tar.zst | podman load
+zstd -dc starvz-image.tar.zst | podman load
+# without zstd:
+podman load -i starpu-image.tar
+podman load -i starvz-image.tar
+\end{verbatim}
+\normalsize
+
+Check with \texttt{podman images}.
+\end{frame}
+\begin{frame}[label={sec:org6202022},fragile]{Start the StarPU container now}
+ Once the StarPU image is there:
 
 \footnotesize
 \begin{verbatim}
 git clone https://github.com/schnorr/starpu-tutorial.git
 cd starpu-tutorial
-podman run -it --userns=keep-id \
+podman run -it --user root -e HOME=/home/starpu \
     --mount type=bind,src="$(pwd)",target=/home/starpu/mount \
     registry.gitlab.inria.fr/starpu/starpu-docker/starpu:latest
 # inside the container
@@ -63,9 +89,9 @@ starpu_machine_display -notopology
 You should see one CPU worker per core. Keep this shell open.
 \end{frame}
 \section{Concepts: tasks, DAG, STF}
-\label{sec:org135560f}
+\label{sec:org670ba45}
 
-\begin{frame}[label={sec:org22652fd}]{A typical HPC node}
+\begin{frame}[label={sec:orgd8b34ab}]{A typical HPC node}
 \begin{itemize}
 \item One or more multicore processors, one or more GPUs.
 \item Each GPU has its own \alert{device memory}, linked to the \alert{host memory}
@@ -75,7 +101,7 @@ by PCIe: 16 GB/s (PCIe 3.0 x16) to 63 GB/s (PCIe 5.0 x16).
 
 Goal: compute \(C \leftarrow C + A B\) using \alert{every} core and the GPU.
 \end{frame}
-\begin{frame}[label={sec:org2ee299c},fragile]{Programming it by hand}
+\begin{frame}[label={sec:orgdcf8850},fragile]{Programming it by hand}
  \scriptsize
 \begin{verbatim}
 unsigned jgpu = NB * 0.8;  /* GPU share: tuned by hand for this node */
@@ -97,7 +123,7 @@ Every line hides a decision valid for one machine only:
 \item \alert{pinning} threads, 4. \alert{porting} to another node.
 \end{enumerate}
 \end{frame}
-\begin{frame}[label={sec:org16ef3b7}]{The task-based paradigm}
+\begin{frame}[label={sec:orgb204e22}]{The task-based paradigm}
 \begin{itemize}
 \item The programmer describes \alert{what}: tasks, the data they access, and
 how they access it.
@@ -107,7 +133,7 @@ moves the data accordingly.
 dependencies, 4.0), and \alert{StarPU}.
 \end{itemize}
 \end{frame}
-\begin{frame}[label={sec:org5d309fe}]{Tasks, data, access modes}
+\begin{frame}[label={sec:org30ea64a}]{Tasks, data, access modes}
 \begin{itemize}
 \item \alert{Task}: a sequential function applied to \alert{data blocks}.
 \item Tiled GEMM: one task per \((i, j, k)\) computes
@@ -128,7 +154,7 @@ WAW & both write & keep the order\\
 
 The programmer never writes them: they are \alert{implicit}.
 \end{frame}
-\begin{frame}[label={sec:org21cc33d}]{The DAG of the tiled product, \(NB = 2\)}
+\begin{frame}[label={sec:org443690c}]{The DAG of the tiled product, \(NB = 2\)}
 \begin{center}
 \includegraphics[width=0.95\linewidth]{./img/dag_gemm_2x2.pdf}
 \end{center}
@@ -136,7 +162,7 @@ The programmer never writes them: they are \alert{implicit}.
 Four independent chains of two tasks: each \(C_{ij}\) is updated twice
 (RAW), \(A\) and \(B\) are only read.
 \end{frame}
-\begin{frame}[label={sec:orga51e1ff}]{Work, critical path, granularity}
+\begin{frame}[label={sec:org70ed22e}]{Work, critical path, granularity}
 \begin{itemize}
 \item \alert{Work} \(T_1\): \(NB^3\) block products.
 \item \alert{Critical path} \(T_\infty\): \(NB\) block products (one per \(k\)).
@@ -153,7 +179,7 @@ Granularity is a trade-off:
 
 One of the few performance decisions left to the programmer.
 \end{frame}
-\begin{frame}[label={sec:org7f6138a},fragile]{Sequential Task Flow (STF)}
+\begin{frame}[label={sec:orgd393f2f},fragile]{Sequential Task Flow (STF)}
  \scriptsize
 \begin{verbatim}
 for (unsigned i = 0; i < NB; i++)            /* the loops do not change */
@@ -173,7 +199,7 @@ starpu_task_wait_for_all();
 \item Sequential semantics, parallel execution.
 \end{itemize}
 \end{frame}
-\begin{frame}[label={sec:orgbbcc472},fragile]{Hands-on 1 (15 min) --- first programs}
+\begin{frame}[label={sec:org6676a6d},fragile]{Hands-on 1 (15 min) --- first programs}
  Handout, section "Hands-on 1":
 \begin{enumerate}
 \item Build the examples with \texttt{make}.
@@ -182,9 +208,9 @@ starpu_task_wait_for_all();
 \end{enumerate}
 \end{frame}
 \section{The StarPU runtime}
-\label{sec:org66aeb27}
+\label{sec:org20adee1}
 
-\begin{frame}[label={sec:orgdd92231}]{StarPU in the software stack}
+\begin{frame}[label={sec:orgfa3d774}]{StarPU in the software stack}
 \begin{center}
 \includegraphics[height=0.6\textheight]{./img/stack-full.pdf}
 \end{center}
@@ -192,7 +218,7 @@ starpu_task_wait_for_all();
 C interface implementing STF; CPUs, CUDA, HIP, OpenCL, clusters with
 StarPU-MPI. Developed at Inria Bordeaux (STORM team).
 \end{frame}
-\begin{frame}[label={sec:orgc81c9d1}]{Three components, three problems solved}
+\begin{frame}[label={sec:orgd0af8fe}]{Three components, three problems solved}
 \begin{itemize}
 \item \alert{Scheduler} (balancing): each ready task goes to a worker, chosen by
 a scheduling policy --- from greedy to model-based.
@@ -205,7 +231,7 @@ dedicated core); one task at a time, no preemption.
 Programmer-side abstractions: \alert{codelet} (a kind of task), \alert{data handle}
 (a registered block), \alert{task} (a codelet applied to handles).
 \end{frame}
-\begin{frame}[label={sec:org25b8101},fragile]{Codelets and tasks}
+\begin{frame}[label={sec:org59eb439},fragile]{Codelets and tasks}
  \scriptsize
 \begin{verbatim}
 void hello_cpu(void *buffers[], void *cl_arg)
@@ -226,7 +252,7 @@ int main(void)
 }
 \end{verbatim}
 \end{frame}
-\begin{frame}[label={sec:org607fe8d},fragile]{Data handles and access modes}
+\begin{frame}[label={sec:org718c5e3},fragile]{Data handles and access modes}
  \scriptsize
 \begin{verbatim}
 struct starpu_codelet scal_cl = {
@@ -249,7 +275,7 @@ starpu_data_unregister(vector_h);   /* data back in main memory */
 memory node where the task runs}.
 \end{itemize}
 \end{frame}
-\begin{frame}[label={sec:orgf64b3cf},fragile]{Partitioning and coherence}
+\begin{frame}[label={sec:orga889ace},fragile]{Partitioning and coherence}
  \begin{itemize}
 \item \alert{Filters} split a registered matrix into a grid of sub-handles:
 \texttt{starpu\_matrix\_filter\_block} and \texttt{...\_vertical\_block}, applied with
@@ -263,7 +289,7 @@ transfers overlapped with computation.
 StarPU: a filtered block is not contiguous.
 \end{itemize}
 \end{frame}
-\begin{frame}[label={sec:org9deff9d},fragile]{One codelet, several implementations}
+\begin{frame}[label={sec:orgd9dae3f},fragile]{One codelet, several implementations}
  \scriptsize
 \begin{verbatim}
 static struct starpu_perfmodel gemm_model = {
@@ -284,7 +310,7 @@ static struct starpu_codelet gemm_cl = {
 
 The scheduler picks the worker, hence the implementation, task by task.
 \end{frame}
-\begin{frame}[label={sec:orgb9538d2},fragile]{Schedulers and performance models}
+\begin{frame}[label={sec:org9b17d25},fragile]{Schedulers and performance models}
  \small
 \texttt{STARPU\_SCHED} selects the policy at runtime:
 \begin{itemize}
@@ -303,7 +329,7 @@ implementation per data size in \texttt{\textasciitilde{}/.starpu/sampling/}:
 
 The static 80\% split becomes a task-by-task decision.
 \end{frame}
-\begin{frame}[label={sec:orgb7fecf9},fragile]{Hands-on 2 (30 min) --- the tiled matrix multiplication}
+\begin{frame}[label={sec:org034cbc4},fragile]{Hands-on 2 (30 min) --- the tiled matrix multiplication}
  Handout, section "Hands-on 2":
 \begin{enumerate}
 \item Run \texttt{gemm\_seq}, then complete the TODO of \texttt{gemm\_starpu\_todo.c}.
@@ -313,9 +339,9 @@ The static 80\% split becomes a task-by-task decision.
 \end{enumerate}
 \end{frame}
 \section{Observing task-based executions}
-\label{sec:org942ef1f}
+\label{sec:orgb047b82}
 
-\begin{frame}[label={sec:orgfa98266}]{Why traces?}
+\begin{frame}[label={sec:org0e36c73}]{Why traces?}
 \begin{itemize}
 \item Time, speedup and efficiency are single numbers.
 \item They do not say \alert{why} an execution is slow:
@@ -328,7 +354,7 @@ The static 80\% split becomes a task-by-task decision.
 \item Answering requires looking at what happened: \alert{execution traces}.
 \end{itemize}
 \end{frame}
-\begin{frame}[label={sec:org566d1bf},fragile]{Recording a trace}
+\begin{frame}[label={sec:org545ece6},fragile]{Recording a trace}
  \begin{itemize}
 \item StarPU built with FxT (true in the tutorial image).
 \item At runtime: \texttt{STARPU\_FXT\_TRACE=1}, files in \texttt{STARPU\_FXT\_PREFIX},
@@ -340,7 +366,7 @@ written at \texttt{starpu\_shutdown()}.
 Two containers today: StarPU records and converts, StarVZ
 (\texttt{docker.io/viniciusvgp/starvz}) analyzes.
 \end{frame}
-\begin{frame}[label={sec:org6b12252},fragile]{The StarVZ workflow}
+\begin{frame}[label={sec:orgfc209ae},fragile]{The StarVZ workflow}
  \begin{itemize}
 \item \alert{Phase 1} (shell): Paje trace \(\rightarrow\) compact \texttt{.parquet}
 files describing tasks, workers, handles and the DAG.
@@ -354,7 +380,7 @@ starvz --use-paje-trace --keep --phase1 trace_nb8/
 Rscript starvz_compare.R starvz_compare.yaml trace_nb2 trace_nb8 out.png
 \end{verbatim}
 \end{frame}
-\begin{frame}[label={sec:orga615554}]{Reading a space-time diagram}
+\begin{frame}[label={sec:orga4647b8}]{Reading a space-time diagram}
 \begin{center}
 \includegraphics[height=0.62\textheight]{./img/starvz_gemm_nb2_nb8.png}
 \end{center}
@@ -362,7 +388,7 @@ Rscript starvz_compare.R starvz_compare.yaml trace_nb2 trace_nb8 out.png
 Rows: workers; rectangles: tasks; left: idleness; gray band: ABE lower
 bound (ignores dependencies); bottom: submitted and ready tasks.
 \end{frame}
-\begin{frame}[label={sec:orgd68e70a}]{What to look for}
+\begin{frame}[label={sec:org9b1f8e8}]{What to look for}
 \begin{itemize}
 \item Gaps \alert{and} few ready tasks: the DAG lacks parallelism (\(NB = 2\)).
 \item Gaps \alert{while} many tasks are ready: runtime or data transfers (more
@@ -373,7 +399,7 @@ interference.
 busy?
 \end{itemize}
 \end{frame}
-\begin{frame}[label={sec:orgc97dbe2},fragile]{Hands-on 3 (25 min) --- traces and StarVZ}
+\begin{frame}[label={sec:orgaf431cd},fragile]{Hands-on 3 (25 min) --- traces and StarVZ}
  Handout, section "Hands-on 3":
 \begin{enumerate}
 \item Record traces of \texttt{gemm\_starpu 2048 2} and \texttt{2048 8}.
@@ -383,16 +409,16 @@ busy?
 \end{enumerate}
 \end{frame}
 \section{Closing}
-\label{sec:org9555f80}
+\label{sec:orga6afe3c}
 
-\begin{frame}[label={sec:org5acdfcd},fragile]{CPU+GPU: \texttt{eager} vs. \texttt{dmda} (instructor's machine)}
+\begin{frame}[label={sec:org703bba4},fragile]{CPU+GPU: \texttt{eager} vs. \texttt{dmda} (instructor's machine)}
  \begin{center}
 \includegraphics[height=0.68\textheight]{./img/starvz_gpu_eager_dmda.png}
 \end{center}
 
 Same binary, 6 CPU workers + 1 GPU, \(N = 2048\), \(NB = 8\).
 \end{frame}
-\begin{frame}[label={sec:orga238979},fragile]{What we left out}
+\begin{frame}[label={sec:org3bceaa0},fragile]{What we left out}
  \begin{itemize}
 \item Distributed execution with StarPU-MPI (same STF model, across nodes).
 \item Reductions and commutative accesses (relaxing RW dependencies).
