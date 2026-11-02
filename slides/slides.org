@@ -42,7 +42,7 @@ chapter, whose figures and listings are reused here.
 
 ** Today, 10:20--12:30, no break
 
-#+ATTR_LATEX: :align llll
+#+ATTR_LATEX: :align llll :font \small
 | 10:20 | 10 min | Opening, start the containers   |                    |
 | 10:30 | 15 min | Concepts: tasks, DAG, STF       | exposition         |
 | 10:45 | 15 min | *Hands-on 1*: first programs    | =hello_world=, =vector_scal= |
@@ -52,7 +52,9 @@ chapter, whose figures and listings are reused here.
 | 11:55 | 25 min | *Hands-on 3*: traces and StarVZ | =starvz=           |
 | 12:20 | 10 min | Closing, questions              |                    |
 
-Everything is in the companion repository and in the book chapter.
+#+LaTeX: \small
+Everything is in the companion repository and in the book chapter. \\
+Hands-on guide: \url{https://github.com/schnorr/starpu-tutorial/blob/master/handout.org}
 
 ** First of all: get the two images
 
