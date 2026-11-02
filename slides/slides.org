@@ -63,7 +63,7 @@ distributed in the room, or with =podman pull=). Then:
 #+begin_src bash
 git clone https://github.com/schnorr/starpu-tutorial.git
 cd starpu-tutorial
-podman run -it --userns=keep-id \
+podman run -it --user root -e HOME=/home/starpu \
     --mount type=bind,src="$(pwd)",target=/home/starpu/mount \
     registry.gitlab.inria.fr/starpu/starpu-docker/starpu:latest
 # inside the container
