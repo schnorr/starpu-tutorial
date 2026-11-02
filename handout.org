@@ -89,7 +89,7 @@ cd starpu-tutorial
 From the =starpu-tutorial= directory:
 
 #+begin_src bash
-podman run -it --userns=keep-id --hostname starpu \
+podman run -it --user root -e HOME=/home/starpu --hostname starpu \
     --mount type=bind,src="$(pwd)",target=/home/starpu/mount \
     $STARPU_IMG
 #+end_src
@@ -97,10 +97,14 @@ podman run -it --userns=keep-id --hostname starpu \
 - =--mount= makes the repository visible inside the container as
   =~/mount=: files you edit on the host (with your usual editor) are
   the same files the container compiles and runs.
-- =--userns=keep-id= keeps your own user ID inside the container, so
-  the container can write into the mounted directory. Without it,
-  rootless Podman remaps the IDs and the build fails with "Permission
-  denied".
+- =--user root= runs the container as its root user, which rootless
+  Podman maps to your own user on the host: the container can write
+  into the mounted directory, and the files it creates belong to you.
+  With the image's default user (=starpu=), the build fails with
+  "Permission denied"; and =--userns=keep-id= does not work with the
+  network accounts of the lab (the container does not start).
+- =-e HOME=/home/starpu= keeps the home directory of the image, so
+  =~/mount= and =~/.starpu= are where this handout expects them.
 - =--hostname starpu= gives the container a fixed name; StarPU stores
   its performance models per host name.
 
@@ -299,7 +303,7 @@ implementation of =gemm_cl= (Listing 3.8) calls =cublasSgemm=; the same
 =gemm_starpu= binary uses it as soon as a GPU is visible.
 
 #+begin_src bash
-podman run -it --userns=keep-id --hostname starpu-demo \
+podman run -it --user root -e HOME=/home/starpu --hostname starpu-demo \
     --device nvidia.com/gpu=all \
     -v starpu-calib:/home/starpu/.starpu:U \
     -v starpu-nvcache:/home/starpu/.nv:U \
@@ -365,7 +369,7 @@ Open a second host terminal, go to the =starpu-tutorial= directory,
 set =STARVZ_IMG= again, and run:
 
 #+begin_src bash
-podman run -it --rm --userns=keep-id --entrypoint bash \
+podman run -it --rm --user root -e HOME=/home/rstudio --entrypoint bash \
     --mount type=bind,src="$(pwd)",target=/home/rstudio/mount \
     $STARVZ_IMG
 cd ~/mount/examples
