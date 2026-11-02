@@ -10,26 +10,26 @@
 
 Handout of the minicurso /Development of Parallel Applications with the
 Task-Based Paradigm and the StarPU Runtime/ (SSCAD 2026, Tuesday
-2026-11-03, 14:00--16:10, Lab DIMAp). The 130 minutes alternate short
+2026-11-03, 10:20--12:30, LabGrad DCA). The 130 minutes alternate short
 expositions (slides in =slides/=) with three hands-on parts. Every
 program used here is a listing of the book chapter, in =examples/=.
 
 | Time  | Min | Part                           | Chapter |
 |-------+-----+--------------------------------+---------|
-| 14:00 |  10 | Opening: start the containers  | ---           |
-| 14:10 |  15 | Exposition: tasks, DAG, STF    | 3.1--3.2      |
-| 14:25 |  15 | *Hands-on 1*: first programs   | 3.3.2--3.3.3  |
-| 14:40 |  15 | Exposition: the StarPU runtime | 3.3           |
-| 14:55 |  30 | *Hands-on 2*: tiled GEMM       | 3.4           |
-| 15:25 |  10 | Exposition: traces and StarVZ  | 3.5           |
-| 15:35 |  25 | *Hands-on 3*: traces, StarVZ   | 3.5           |
-| 16:00 |  10 | Closing and questions          | 3.6           |
+| 10:20 |  10 | Opening: start the containers  | ---           |
+| 10:30 |  15 | Exposition: tasks, DAG, STF    | 3.1--3.2      |
+| 10:45 |  15 | *Hands-on 1*: first programs   | 3.3.2--3.3.3  |
+| 11:00 |  15 | Exposition: the StarPU runtime | 3.3           |
+| 11:15 |  30 | *Hands-on 2*: tiled GEMM       | 3.4           |
+| 11:45 |  10 | Exposition: traces and StarVZ  | 3.5           |
+| 11:55 |  25 | *Hands-on 3*: traces, StarVZ   | 3.5           |
+| 12:20 |  10 | Closing and questions          | 3.6           |
 
 Everything runs on the CPUs of your machine, inside two Podman
 containers: one with StarPU, one with StarVZ. Only the instructor's
 machine has a GPU, for a short demonstration at the end of Hands-on 2.
 
-* Opening (14:00, 10 min): start the containers
+* Opening (10:20, 10 min): start the containers
 
 ** The two images
 
@@ -117,17 +117,17 @@ Check that StarPU sees the CPUs:
 starpu_machine_display -notopology
 #+end_src
 
-You should see one CPU worker per core (6 on the Lab DIMAp machines).
+You should see one CPU worker per core of the machine.
 If you see twice as many as physical cores, read "Workers and cores"
 in Hands-on 2.
 
-* Exposition (14:10, 15 min): tasks, DAG, STF
+* Exposition (10:30, 15 min): tasks, DAG, STF
 
 Slides, part "Concepts". Chapter Sections 3.1 (programming a CPU+GPU
 node by hand) and 3.2 (tasks, access modes, dependencies, the DAG of the tiled
 matrix multiplication, work and critical path, the STF model).
 
-* Hands-on 1 (14:25, 15 min): first programs
+* Hands-on 1 (10:45, 15 min): first programs
 
 Goal: build and run the first two StarPU programs of the chapter
 (Sections 3.3.2 and 3.3.3), and see the runtime choose the workers.
@@ -182,14 +182,14 @@ mode.
 - The factor is passed with =STARPU_VALUE=, the vector with a data
   handle. What is the difference for the runtime?
 
-* Exposition (14:40, 15 min): the StarPU runtime
+* Exposition (11:00, 15 min): the StarPU runtime
 
 Slides, part "The StarPU runtime". Chapter Section 3.3: workers, memory nodes
 and the scheduler; codelets and tasks; data handles and partitioning;
 the coherence protocol; several implementations in one codelet;
 schedulers and performance models.
 
-* Hands-on 2 (14:55, 30 min): the tiled matrix multiplication
+* Hands-on 2 (11:15, 30 min): the tiled matrix multiplication
 
 Goal: turn the sequential tiled product into a StarPU program, and
 observe the effect of the block size and of the scheduler (Section 3.4).
@@ -293,8 +293,8 @@ share core $c$):
 STARPU_WORKERS_CPUID="0 2 4 6 8 10" ./gemm_starpu 2048 8
 #+end_src
 
-On the Lab DIMAp machines (6 physical cores, no hardware threads),
-nothing is needed.
+When =starpu_machine_display= already shows one worker per physical
+core, nothing is needed.
 
 ** Instructor demo: the same binary with a GPU (5 min)
 
@@ -324,13 +324,13 @@ the GPU (about 370 GFlop/s on the instructor's RTX A1000, against about
 tasks that they execute about 200 times slower than the GPU (16 ms
 against 0.09 ms), and the GPU ends up waiting for them. Hands-on 3 shows the two traces.
 
-* Exposition (15:25, 10 min): observing executions
+* Exposition (11:45, 10 min): observing executions
 
 Slides, part "Observing task-based executions". Chapter Section 3.5: why
 traces, FxT recording, the two phases of StarVZ, how to read a
 space-time diagram.
 
-* Hands-on 3 (15:35, 25 min): traces and StarVZ
+* Hands-on 3 (11:55, 25 min): traces and StarVZ
 
 Goal: record the traces of $NB = 2$ and $NB = 8$, and reproduce the
 figure of Section 3.5 (Figure 3.3) on your own machine.
@@ -435,7 +435,7 @@ Rscript starvz_compare.R starvz_compare.yaml ../traces/gpu_eager ../traces/gpu_d
 - With =dmda=, where did the tasks go? Is it a problem that the CPU
   workers stay idle?
 
-* Closing (16:00, 10 min)
+* Closing (12:20, 10 min)
 
 Slides, part "Closing". Topics left out: StarPU-MPI, reductions and
 commutative accesses, advanced schedulers, HIP and OpenCL. Further

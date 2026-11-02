@@ -4,7 +4,7 @@
 
 #+TITLE: Development of Parallel Applications with the Task-Based Paradigm and the StarPU Runtime
 #+AUTHOR: Lucas Mello Schnorr, Vinícius Garcia Pinto, Raymond Namyst, Samuel Thibault
-#+DATE: SSCAD 2026 --- Minicurso 3 --- \url{https://github.com/schnorr/starpu-tutorial}
+#+DATE: SSCAD 2026 --- Minicurso 1 --- \url{https://github.com/schnorr/starpu-tutorial}
 #+OPTIONS: H:2 num:t toc:nil \n:nil @:t ::t |:t ^:t -:t f:t *:t <:t title:nil
 #+LANGUAGE: en
 #+TAGS: noexport(n) ignore(i)
@@ -25,32 +25,32 @@
 * About this deck                                                  :noexport:
 
 Slides of the three exposition blocks of the minicurso (Tuesday,
-2026-11-03, 14:00-16:10, 130 min without break). The hands-on parts in
+2026-11-03, 10:20-12:30, 130 min without break). The hands-on parts in
 between are in =../handout.org=; the frames titled "Hands-on" mark the
 moments to switch to it. Each block follows a section of the book
 chapter, whose figures and listings are reused here.
 
 | Block     | Time  | Min | Chapter |
 |-----------+-------+-----+---------|
-| Opening   | 14:00 |  10 | ---      |
-| Concepts  | 14:10 |  15 | 3.1--3.2 |
-| StarPU    | 14:40 |  15 | 3.3      |
-| Traces    | 15:25 |  10 | 3.5      |
-| Closing   | 16:00 |  10 | 3.6      |
+| Opening   | 10:20 |  10 | ---      |
+| Concepts  | 10:30 |  15 | 3.1--3.2 |
+| StarPU    | 11:00 |  15 | 3.3      |
+| Traces    | 11:45 |  10 | 3.5      |
+| Closing   | 12:20 |  10 | 3.6      |
 
 * Opening
 
-** Today, 14:00--16:10, no break
+** Today, 10:20--12:30, no break
 
 #+ATTR_LATEX: :align llll
-| 14:00 | 10 min | Opening, start the containers   |                    |
-| 14:10 | 15 min | Concepts: tasks, DAG, STF       | exposition         |
-| 14:25 | 15 min | *Hands-on 1*: first programs    | =hello_world=, =vector_scal= |
-| 14:40 | 15 min | The StarPU runtime              | exposition         |
-| 14:55 | 30 min | *Hands-on 2*: tiled GEMM        | =gemm_starpu=, GPU demo |
-| 15:25 | 10 min | Observing executions            | exposition         |
-| 15:35 | 25 min | *Hands-on 3*: traces and StarVZ | =starvz=           |
-| 16:00 | 10 min | Closing, questions              |                    |
+| 10:20 | 10 min | Opening, start the containers   |                    |
+| 10:30 | 15 min | Concepts: tasks, DAG, STF       | exposition         |
+| 10:45 | 15 min | *Hands-on 1*: first programs    | =hello_world=, =vector_scal= |
+| 11:00 | 15 min | The StarPU runtime              | exposition         |
+| 11:15 | 30 min | *Hands-on 2*: tiled GEMM        | =gemm_starpu=, GPU demo |
+| 11:45 | 10 min | Observing executions            | exposition         |
+| 11:55 | 25 min | *Hands-on 3*: traces and StarVZ | =starvz=           |
+| 12:20 | 10 min | Closing, questions              |                    |
 
 Everything is in the companion repository and in the book chapter.
 
