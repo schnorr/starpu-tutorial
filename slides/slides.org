@@ -54,6 +54,31 @@ chapter, whose figures and listings are reused here.
 
 Everything is in the companion repository and in the book chapter.
 
+** First of all: get the two images
+
+About 8 GB and 4 GB: start now, the opening goes on meanwhile.
+
+#+LaTeX: \footnotesize
+#+begin_src bash
+podman pull registry.gitlab.inria.fr/starpu/starpu-docker/starpu:latest
+podman pull docker.io/viniciusvgp/starvz:latest
+#+end_src
+#+LaTeX: \normalsize
+
+Or, from the archives distributed in the room:
+
+#+LaTeX: \footnotesize
+#+begin_src bash
+zstd -dc starpu-image.tar.zst | podman load
+zstd -dc starvz-image.tar.zst | podman load
+# without zstd:
+podman load -i starpu-image.tar
+podman load -i starvz-image.tar
+#+end_src
+#+LaTeX: \normalsize
+
+Check with =podman images=.
+
 ** Start the StarPU container now
 
 Once the StarPU image is there:
