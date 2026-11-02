@@ -42,6 +42,7 @@ The previous one-day, three-session version of this tutorial (CARLA 2026) is at 
 | =examples/starvz_compare.R=     | Draws two traces side by side (Figure 3.3 of the chapter)          |
 | =examples/starvz_compare.yaml=  | StarVZ configuration used by the script (Listing 3.13)             |
 | =traces/nb2=, =traces/nb8=      | Traces of =gemm_starpu 2048 2= and =2048 8=, 6 CPU workers, after StarVZ Phase 1 |
+| =traces/nb2_4cpu=, =nb8_4cpu=   | Same, with 4 CPU workers (as on the LabGrad DCA machines): fallback of Hands-on 3 |
 | =traces/gpu_eager=, =gpu_dmda=  | Traces of =gemm_starpu 2048 8= with 6 CPU workers and 1 GPU, schedulers =eager= and =dmda= |
 
 * Preparing the machines

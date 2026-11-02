@@ -237,25 +237,31 @@ solution.
 
 ** Block size and scheduler (12 min)
 
-Use the reference program from now on, with 6 CPU workers and the
-model-based scheduler =dmda=:
+Use the reference program from now on, with one CPU worker per core
+of the LabGrad DCA machines (4) and the model-based scheduler =dmda=:
 
 #+begin_src bash
-export STARPU_NCPU=6 STARPU_SCHED=dmda
+export STARPU_NCPU=4 STARPU_SCHED=dmda
 ./gemm_starpu 2048 8     # first runs calibrate the performance model
 ./gemm_starpu 2048 8
 ./gemm_starpu 2048 2
+./gemm_starpu 2048 1
 #+end_src
 
 *Questions*:
+- With $NB = 1$, the program submits a single task. How many of the
+  four workers can work? Compare its GFlop/s with $NB = 8$.
 - With $NB = 2$, the DAG (Figure 3.1) has four independent chains of
-  two tasks. How many of the six workers can be busy at the same time?
-  Compare the GFlop/s of $NB = 2$ and $NB = 8$.
-- Try $NB$ = 4, 16, 32 and 64. Where is the best performance? Why does
-  it drop again for very small blocks?
+  two tasks. Is that enough parallelism for four workers? Compare the
+  GFlop/s of $NB = 2$ and $NB = 8$.
+- Section 3.4 of the chapter ran the same two cases with *six*
+  workers, and $NB = 2$ was clearly slower there. Why? (Recall that
+  $T_1 / T_\infty = NB^2$ bounds the number of busy workers.)
+- Try more block sizes. Where is the best performance? Why does it
+  drop again for very small blocks?
 
   #+begin_src bash
-  for nb in 2 4 8 16 32 64; do ./gemm_starpu 2048 $nb; done
+  for nb in 1 2 4 8 16 32 64; do ./gemm_starpu 2048 $nb; done
   #+end_src
 
 - Compare the greedy scheduler with the model-based one. Is there a
@@ -332,12 +338,13 @@ space-time diagram.
 
 * Hands-on 3 (11:55, 25 min): traces and StarVZ
 
-Goal: record the traces of $NB = 2$ and $NB = 8$, and reproduce the
-figure of Section 3.5 (Figure 3.3) on your own machine.
+Goal: record the traces of $NB = 2$ and $NB = 8$ on your machine (4
+workers), and compare them with Figure 3.3 of the chapter (6
+workers).
 
 ** Record the traces (StarPU container, 5 min)
 
-In terminal 1, still with =STARPU_NCPU=6= and =STARPU_SCHED=dmda=:
+In terminal 1, still with =STARPU_NCPU=4= and =STARPU_SCHED=dmda=:
 
 #+begin_src bash
 cd ~/mount/examples
@@ -376,8 +383,8 @@ cd ~/mount/examples
 #+end_src
 
 The image starts a shell that ignores its arguments, hence
-=--entrypoint bash=. The =starvz= script comes with the R package; the
-alias puts it at hand.
+=--entrypoint bash=. The =starvz= script comes with the R package and
+is on the =PATH= of this shell.
 
 ** Phase 1 and Phase 2 (10 min)
 
@@ -397,10 +404,18 @@ Rscript starvz_compare.R starvz_compare.yaml trace_nb2 trace_nb8 starvz_nb2_nb8.
 Open =examples/starvz_nb2_nb8.png= on the host with any image viewer.
 
 If something went wrong with your traces, use the ones recorded by the
-instructor, already through Phase 1:
+instructor with 4 workers, already through Phase 1:
 
 #+begin_src bash
-Rscript starvz_compare.R starvz_compare.yaml ../traces/nb2 ../traces/nb8 starvz_nb2_nb8.png
+Rscript starvz_compare.R starvz_compare.yaml ../traces/nb2_4cpu ../traces/nb8_4cpu starvz_nb2_nb8.png
+#+end_src
+
+Then put your $NB = 2$ trace next to the one of the chapter (Figure
+3.3, 6 workers, in =traces/nb2=):
+
+#+begin_src bash
+Rscript starvz_compare.R starvz_compare.yaml ../traces/nb2 trace_nb2 starvz_nb2_6vs4.png \
+    "NB = 2, 6 workers" "NB = 2, 4 workers"
 #+end_src
 
 ** Reading the figure (10 min)
@@ -410,15 +425,15 @@ Rscript starvz_compare.R starvz_compare.yaml ../traces/nb2 ../traces/nb8 starvz_
   compared with the execution? How many tasks are ready during most of
   the run, and why that number?
 - With $NB = 2$, how many tasks are ever ready? How many run at the
-  same time? Some workers may be missing from the figure: StarVZ only
-  shows workers that executed at least one task. How many are missing
-  on your machine?
+  same time? How many tasks does each worker execute?
 - The gray band is the ABE bound, computed from the task durations
-  ignoring dependencies. Why is the $NB = 2$ makespan far from it, and
-  the $NB = 8$ makespan almost on it?
-- The idleness percentage is on the left of each row. Which
-  configuration wastes the machine, and where does the waste come
-  from: the runtime, the data transfers, or the DAG?
+  ignoring dependencies. On your machine, both makespans are close to
+  it. In =starvz_nb2_6vs4.png=, why is the 6-worker makespan far from
+  it, with four workers idle about half of the time?
+- With 6 workers, would $NB = 2$ ever use the whole machine? Which
+  $NB$ would you choose for 4, 6, or 64 workers?
+- StarVZ only shows workers that executed at least one task. When would
+  a worker be missing from the figure?
 
 ** The instructor's CPU+GPU traces
 

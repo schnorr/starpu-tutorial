@@ -56,8 +56,7 @@ Everything is in the companion repository and in the book chapter.
 
 ** Start the StarPU container now
 
-First load the two images (handout, "Opening": from the archives
-distributed in the room, or with =podman pull=). Then:
+Once the StarPU image is there:
 
 #+LaTeX: \footnotesize
 #+begin_src bash
